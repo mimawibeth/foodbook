@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "798725544209",
+    "project_id": "foodbook-26e69",
+    "storage_bucket": "foodbook-26e69.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:798725544209:android:59aa9702c4efe8bf6994b0",
+        "android_client_info": {
+          "package_name": "com.example.cce106_flutter_project"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBEG4AY-M-L3MPbM-PAD0xb4eukdieY4lQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
