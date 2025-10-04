@@ -1,6 +1,5 @@
 import 'package:cce106_flutter_project/views/create_recipe.dart';
 import 'package:flutter/material.dart';
-import 'discover.dart';
 import 'my_recipes.dart';
 import 'favorites.dart';
 import 'profile.dart';
@@ -127,7 +126,7 @@ class DashboardHome extends StatelessWidget {
           // Strong line below for separation
           Container(
             height: 2,
-            color: Color(0xFFF2A541), // ✅ Mustard Yellow
+            color: Color(0xFF1C1C1C), // ✅ Mustard Yellow
             margin: const EdgeInsets.symmetric(vertical: 2),
           ),
 
@@ -165,7 +164,7 @@ class TabBarSection extends StatelessWidget {
           TabBar(
             labelColor: Color(0xFFD72638),
             unselectedLabelColor: Color(0xFF1C1C1C),
-            indicatorColor: Color(0xFFF2A541),
+            indicatorColor: Color(0xFFD72638),
             tabs: [
               Tab(text: "Home"),
               Tab(text: "Breakfast"),

@@ -1,6 +1,7 @@
 import 'package:cce106_flutter_project/auth/register.dart';
 import 'package:cce106_flutter_project/views/dashboard.dart';
 import 'package:flutter/material.dart';
+import 'register.dart'; // <-- Import RegisterPage
 
 class FoodBook extends StatefulWidget {
   const FoodBook({super.key});
@@ -98,6 +99,7 @@ class _FoodBookState extends State<FoodBook> {
                     TextField(
                       controller: usernameController,
                       decoration: InputDecoration(
+                        hintText: "Email Address",
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
@@ -105,7 +107,7 @@ class _FoodBookState extends State<FoodBook> {
                         ),
                         focusedBorder: const OutlineInputBorder(
                           borderSide: BorderSide(
-                            color: Color(0xFFF2A541), // Mustard Yellow
+                            color: Color(0xFF1C1C1C), // Mustard Yellow
                             width: 2,
                           ),
                         ),
@@ -128,6 +130,7 @@ class _FoodBookState extends State<FoodBook> {
                       controller: passwordController,
                       obscureText: true,
                       decoration: InputDecoration(
+                        hintText: "Password",
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
@@ -135,7 +138,7 @@ class _FoodBookState extends State<FoodBook> {
                         ),
                         focusedBorder: const OutlineInputBorder(
                           borderSide: BorderSide(
-                            color: Color(0xFFF2A541), // Mustard Yellow
+                            color: Color(0xFF1C1C1C), // Mustard Yellow
                             width: 2,
                           ),
                         ),
@@ -157,7 +160,6 @@ class _FoodBookState extends State<FoodBook> {
                           "Forgot Password?",
                           style: TextStyle(
                             color: Color(0xFF1C1C1C), // Almost Black
-                            fontWeight: FontWeight.bold,
                             decoration: TextDecoration.underline,
                           ),
                         ),
@@ -209,6 +211,8 @@ class _FoodBookState extends State<FoodBook> {
                     // Create account prompt
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
                       children: [
                         const Text(
                           "Don’t have an account? ",
