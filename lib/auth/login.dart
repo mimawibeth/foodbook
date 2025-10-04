@@ -1,3 +1,4 @@
+import 'package:cce106_flutter_project/auth/register.dart';
 import 'package:cce106_flutter_project/views/dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -83,6 +84,7 @@ class _FoodBookState extends State<FoodBook> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: const Color(0xFFFAFAFA),
       body: Column(
         children: [
           // Top branding with curve
@@ -99,10 +101,9 @@ class _FoodBookState extends State<FoodBook> {
               child: Text(
                 "FoodBook",
                 style: TextStyle(
-                  fontSize: 28,
+                  fontSize: 30,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 2,
-                  color: Colors.white.withOpacity(0.95),
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -124,6 +125,7 @@ class _FoodBookState extends State<FoodBook> {
                           style: textstyle.copyWith(
                             fontSize: 25,
                             color: const Color(0xFF1C1C1C),
+                            color: const Color(0xFF1C1C1C),
                           ),
                         ),
                       ],
@@ -135,6 +137,7 @@ class _FoodBookState extends State<FoodBook> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
+                        color: Color(0xFF1C1C1C),
                         color: Color(0xFF1C1C1C),
                       ),
                     ),
@@ -158,6 +161,7 @@ class _FoodBookState extends State<FoodBook> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
+                        color: Color(0xFF1C1C1C),
                         color: Color(0xFF1C1C1C),
                       ),
                     ),
@@ -189,6 +193,7 @@ class _FoodBookState extends State<FoodBook> {
                           "Forgot Password?",
                           style: TextStyle(
                             color: Color(0xFF1C1C1C),
+                            color: Color(0xFF1C1C1C),
                             decoration: TextDecoration.underline,
                           ),
                         ),
@@ -204,6 +209,7 @@ class _FoodBookState extends State<FoodBook> {
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size.fromHeight(50),
+                        backgroundColor: const Color(0xFFD72638),
                         backgroundColor: const Color(0xFFD72638),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -252,6 +258,7 @@ class _FoodBookState extends State<FoodBook> {
                             style: TextStyle(
                               color: Color(0xFF1C1C1C),
                               fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.underline,
                             ),
                           ),
                         ),

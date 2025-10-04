@@ -1,9 +1,10 @@
+import 'package:cce106_flutter_project/auth/login.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../views/dashboard.dart';
 
-class RegisterPage extends StatefulWidget {
+class RegisterPage extends StatelessWidget {
   const RegisterPage({super.key});
 
   @override
@@ -119,7 +120,6 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
       body: Column(
         children: [
           // Top branding with curve
@@ -133,6 +133,10 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
             ),
           ),
+
+          const SizedBox(height: 20),
+
+          // ✅ Sign Up Form
           Expanded(
             child: Center(
               child: SingleChildScrollView(
@@ -233,7 +237,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           minimumSize: const Size.fromHeight(45),
                           backgroundColor: const Color(0xFFD72638),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                         onPressed: isLoading ? null : checkRegister,
@@ -269,12 +273,11 @@ class _RegisterPageState extends State<RegisterPage> {
                               ),
                             ),
                           ),
-                        ],
+                        ),
                       ),
-                      const SizedBox(height: 20),
                     ],
                   ),
-                ),
+                ],
               ),
             ),
           ),
@@ -284,16 +287,22 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 }
 
-// Text styles
-var textstyle = const TextStyle(
-  fontWeight: FontWeight.bold,
-  letterSpacing: 2,
-  fontSize: 18,
-);
+class CurveClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.lineTo(0, size.height - 50);
+    path.quadraticBezierTo(
+      size.width / 2,
+      size.height,
+      size.width,
+      size.height - 50,
+    );
+    path.lineTo(size.width, 0);
+    path.close();
+    return path;
+  }
 
-var errorTextStyle = const TextStyle(
-  fontWeight: FontWeight.bold,
-  letterSpacing: 1,
-  fontSize: 13,
-  color: Colors.red,
-);
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
