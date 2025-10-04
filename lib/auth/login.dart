@@ -1,3 +1,4 @@
+import 'package:cce106_flutter_project/auth/register.dart';
 import 'package:cce106_flutter_project/views/dashboard.dart';
 import 'package:flutter/material.dart';
 
@@ -43,23 +44,19 @@ class _FoodBookState extends State<FoodBook> {
       body: Column(
         children: [
           // Top branding with curve
-          Container(
-            height: 220,
-            decoration: const BoxDecoration(
-              color: Color(0xFFD72638), // Berry Red
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(100),
-                bottomRight: Radius.circular(100),
-              ),
-            ),
-            child: Center(
-              child: Text(
+          ClipPath(
+            clipper: CurveClipper(),
+            child: Container(
+              height: 230,
+              width: double.infinity,
+              color: const Color(0xFFD72638),
+              alignment: Alignment.center,
+              child: const Text(
                 "FoodBook",
                 style: TextStyle(
-                  fontSize: 28,
+                  fontSize: 30,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 2,
-                  color: Colors.white.withOpacity(0.95),
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -212,16 +209,27 @@ class _FoodBookState extends State<FoodBook> {
                     // Create account prompt
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Text(
+                      children: [
+                        const Text(
                           "Don’t have an account? ",
                           style: TextStyle(color: Color(0xFF1C1C1C)),
                         ),
-                        Text(
-                          "Sign up",
-                          style: TextStyle(
-                            color: Color.fromARGB(255, 65, 106, 242), // Mustard Yellow
-                            fontWeight: FontWeight.bold,
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const RegisterPage(),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            "Sign up",
+                            style: TextStyle(
+                              color: Color.fromARGB(255, 65, 106, 242),
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.underline,
+                            ),
                           ),
                         ),
                       ],
