@@ -4,7 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../views/dashboard.dart';
 
-class RegisterPage extends StatelessWidget {
+class RegisterPage extends StatefulWidget {
+  // ✅ Changed to StatefulWidget
   const RegisterPage({super.key});
 
   @override
@@ -16,7 +17,8 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController lastNameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController confirmPasswordController = TextEditingController();
+  final TextEditingController confirmPasswordController =
+      TextEditingController();
 
   late String errorMessage;
   late bool isError;
@@ -86,19 +88,20 @@ class _RegisterPageState extends State<RegisterPage> {
     try {
       UserCredential userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
-              email: emailController.text.trim(),
-              password: passwordController.text.trim());
+            email: emailController.text.trim(),
+            password: passwordController.text.trim(),
+          );
 
       // Save extra info in Firestore
       await FirebaseFirestore.instance
           .collection('users')
           .doc(userCredential.user!.uid)
           .set({
-        'firstName': firstNameController.text.trim(),
-        'lastName': lastNameController.text.trim(),
-        'email': emailController.text.trim(),
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+            'firstName': firstNameController.text.trim(),
+            'lastName': lastNameController.text.trim(),
+            'email': emailController.text.trim(),
+            'createdAt': FieldValue.serverTimestamp(),
+          });
 
       // Navigate to Dashboard
       Navigator.pushReplacement(
@@ -148,9 +151,11 @@ class _RegisterPageState extends State<RegisterPage> {
                       const SizedBox(height: 10),
                       Text(
                         "Sign Up",
-                        style: textstyle.copyWith(
+                        style: const TextStyle(
+                          // ✅ Fixed textstyle
                           fontSize: 25,
-                          color: const Color(0xFF1C1C1C),
+                          color: Color(0xFF1C1C1C),
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 25),
@@ -243,7 +248,8 @@ class _RegisterPageState extends State<RegisterPage> {
                         onPressed: isLoading ? null : checkRegister,
                         child: isLoading
                             ? const CircularProgressIndicator(
-                                color: Colors.white)
+                                color: Colors.white,
+                              )
                             : const Text(
                                 "Sign Up",
                                 style: TextStyle(
@@ -273,11 +279,11 @@ class _RegisterPageState extends State<RegisterPage> {
                               ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
