@@ -5,7 +5,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../views/dashboard.dart';
 
 class RegisterPage extends StatefulWidget {
-  // ✅ Changed to StatefulWidget
   const RegisterPage({super.key});
 
   @override
@@ -80,33 +79,34 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
-    // If all validations pass, register the user
     setState(() {
       isLoading = true;
     });
 
     try {
+      // ✅ Create user in Firebase Auth
       UserCredential userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
-            email: emailController.text.trim(),
-            password: passwordController.text.trim(),
-          );
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
 
-      // Save extra info in Firestore
+      // ✅ Save extra user info in Firestore with userId
       await FirebaseFirestore.instance
           .collection('users')
           .doc(userCredential.user!.uid)
           .set({
-            'firstName': firstNameController.text.trim(),
-            'lastName': lastNameController.text.trim(),
-            'email': emailController.text.trim(),
-            'createdAt': FieldValue.serverTimestamp(),
-          });
+        'userId': userCredential.user!.uid, // ✅ added userId field
+        'firstName': firstNameController.text.trim(),
+        'lastName': lastNameController.text.trim(),
+        'email': emailController.text.trim(),
+        'createdAt': FieldValue.serverTimestamp(),
+      });
 
-      // Navigate to Dashboard
+      // ✅ Navigate to Dashboard
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const Dashboard()),
+        MaterialPageRoute(builder: (context) => const DashboardHome()),
       );
     } on FirebaseAuthException catch (e) {
       setState(() {
@@ -149,10 +149,9 @@ class _RegisterPageState extends State<RegisterPage> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const SizedBox(height: 10),
-                      Text(
+                      const Text(
                         "Sign Up",
-                        style: const TextStyle(
-                          // ✅ Fixed textstyle
+                        style: TextStyle(
                           fontSize: 25,
                           color: Color(0xFF1C1C1C),
                           fontWeight: FontWeight.bold,
@@ -234,7 +233,11 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                       const SizedBox(height: 15),
 
-                      if (isError) Text(errorMessage, style: errorTextStyle),
+                      if (isError)
+                        Text(
+                          errorMessage,
+                          style: const TextStyle(color: Colors.red),
+                        ),
                       const SizedBox(height: 10),
 
                       ElevatedButton(

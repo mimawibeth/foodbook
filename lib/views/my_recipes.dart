@@ -1,105 +1,112 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'create_recipe.dart';
-import '../widgets/recipe_card.dart';
 
 class MyRecipes extends StatelessWidget {
   const MyRecipes({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Example user recipes, replace with your data source
-    final List<Map<String, String>> userRecipes = [
-      {
-        "username": "Your Name",
-        "recipeTitle": "Adobo",
-        "description":
-            "Lunch\nIngredients:\nChicken, Soy Sauce, Vinegar, Garlic, Bay Leaf\nInstructions:\nSimmer all ingredients until chicken is tender.",
-      },
-      {
-        "username": "Your Name",
-        "recipeTitle": "Pancit Canton",
-        "description":
-            "Dinner\nIngredients:\nNoodles, Vegetables, Pork, Soy Sauce\nInstructions:\nStir fry all ingredients and mix with noodles.",
-      },
-    ];
+    final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
       appBar: AppBar(
         backgroundColor: const Color(0xFFD72638),
-        automaticallyImplyLeading: false, // <-- Add this line
-        title: const Text(
-          "My Recipes",
-          style: TextStyle(
-            color: Color(0xFFFAFAFA),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-        elevation: 0,
+        title: const Text("My Recipes"),
       ),
-      body: Column(
-        children: [
-          // Post bar
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const CreateRecipePage(),
-                ),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              color: Colors.white,
-              child: Row(
-                children: const [
-                  Icon(
-                    Icons.account_circle,
-                    size: 32,
-                    color: Color(0xFF1C1C1C),
-                  ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      "Want to share your recipe?",
-                      style: TextStyle(color: Colors.black54),
-                    ),
-                  ),
-                ],
-              ),
+      body: user == null
+          ? const Center(child: Text("Please log in"))
+          : StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('recipes')
+                  .where('userId', isEqualTo: user.uid) // only this user's recipes
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text("Error: ${snapshot.error}"),
+                  );
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(
+                      child: Text("You haven’t posted anything yet"));
+                }
+
+                final recipes = snapshot.data!.docs;
+
+                return ListView.builder(
+                  itemCount: recipes.length,
+                  itemBuilder: (context, index) {
+                    final recipe =
+                        recipes[index].data() as Map<String, dynamic>;
+
+                    final recipeName = recipe['name'] ?? 'No name';
+                    final mealType = recipe['mealType'] ?? 'No meal type';
+                    final ingredients = recipe['ingredients'] ?? '';
+                    final instructions = recipe['instructions'] ?? '';
+
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              recipeName,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              mealType,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.black54,
+                              ),
+                            ),
+                            if (ingredients.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              const Text(
+                                "Ingredients:",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(ingredients),
+                            ],
+                            if (instructions.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              const Text(
+                                "Instructions:",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(instructions),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
             ),
-          ),
-          // Strong line below for separation
-          Container(
-            height: 2,
-            color: Color(0xFF1C1C1C),
-            margin: const EdgeInsets.symmetric(vertical: 2),
-          ),
-          // Recipe List
-          Expanded(
-            child: userRecipes.isEmpty
-                ? const Center(
-                    child: Text(
-                      "You haven't posted any recipes yet.",
-                      style: TextStyle(color: Colors.black54),
-                    ),
-                  )
-                : ListView.builder(
-                    itemCount: userRecipes.length,
-                    itemBuilder: (context, index) {
-                      final recipe = userRecipes[index];
-                      return RecipeCard(
-                        username: recipe["username"] ?? "",
-                        recipeTitle: recipe["recipeTitle"] ?? "",
-                        description: recipe["description"] ?? "",
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
     );
   }
 }
