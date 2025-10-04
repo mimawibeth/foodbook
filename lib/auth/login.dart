@@ -1,5 +1,6 @@
 import 'package:cce106_flutter_project/views/dashboard.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'register.dart'; // <-- Import RegisterPage
 
 class FoodBook extends StatefulWidget {
@@ -10,10 +11,11 @@ class FoodBook extends StatefulWidget {
 }
 
 class _FoodBookState extends State<FoodBook> {
-  TextEditingController usernameController = TextEditingController();
+  TextEditingController emailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   late String errorMessage;
   late bool isError;
+  bool isLoading = false;
 
   @override
   void initState() {
@@ -22,32 +24,72 @@ class _FoodBookState extends State<FoodBook> {
     super.initState();
   }
 
-  void checkLogin(username, password) {
+  void checkLogin(String email, String password) async {
     setState(() {
-      if (username == "") {
+      errorMessage = "";
+      isError = false;
+    });
+
+    if (email.isEmpty) {
+      setState(() {
         errorMessage = "Please enter your Email";
         isError = true;
-      } else if (password == "") {
+      });
+      return;
+    }
+
+    if (password.isEmpty) {
+      setState(() {
         errorMessage = "Please enter your password";
         isError = true;
-      } else {
-        errorMessage = "";
-        isError = false;
-      }
+      });
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
     });
+
+    try {
+      // Firebase authentication
+      UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(
+              email: email.trim(), password: password.trim());
+
+      // Successful login, navigate to Dashboard
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const Dashboard()),
+      );
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        isError = true;
+        if (e.code == 'user-not-found') {
+          errorMessage = "No user found for that email.";
+        } else if (e.code == 'wrong-password') {
+          errorMessage = "Incorrect password.";
+        } else {
+          errorMessage = e.message ?? "Login failed";
+        }
+      });
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA), // Off-White background
+      backgroundColor: const Color(0xFFFAFAFA),
       body: Column(
         children: [
           // Top branding with curve
           Container(
             height: 220,
             decoration: const BoxDecoration(
-              color: Color(0xFFD72638), // Berry Red
+              color: Color(0xFFD72638),
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(100),
                 bottomRight: Radius.circular(100),
@@ -74,7 +116,6 @@ class _FoodBookState extends State<FoodBook> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Login title
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -82,25 +123,24 @@ class _FoodBookState extends State<FoodBook> {
                           "Login",
                           style: textstyle.copyWith(
                             fontSize: 25,
-                            color: const Color(0xFF1C1C1C), // Almost Black
+                            color: const Color(0xFF1C1C1C),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 20),
 
-                    // Email label + field
                     const Text(
                       "Email Address",
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1C1C1C), // Almost Black
+                        color: Color(0xFF1C1C1C),
                       ),
                     ),
                     const SizedBox(height: 5),
                     TextField(
-                      controller: usernameController,
+                      controller: emailController,
                       decoration: InputDecoration(
                         hintText: "Email Address",
                         filled: true,
@@ -108,24 +148,17 @@ class _FoodBookState extends State<FoodBook> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        focusedBorder: const OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: Color(0xFF1C1C1C), // Mustard Yellow
-                            width: 2,
-                          ),
-                        ),
                       ),
                     ),
 
                     const SizedBox(height: 15),
 
-                    // Password label + field
                     const Text(
                       "Password",
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1C1C1C), // Almost Black
+                        color: Color(0xFF1C1C1C),
                       ),
                     ),
                     const SizedBox(height: 5),
@@ -139,16 +172,9 @@ class _FoodBookState extends State<FoodBook> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        focusedBorder: const OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: Color(0xFF1C1C1C), // Mustard Yellow
-                            width: 2,
-                          ),
-                        ),
                       ),
                     ),
 
-                    // Forgot Password button
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
@@ -162,7 +188,7 @@ class _FoodBookState extends State<FoodBook> {
                         child: const Text(
                           "Forgot Password?",
                           style: TextStyle(
-                            color: Color(0xFF1C1C1C), // Almost Black
+                            color: Color(0xFF1C1C1C),
                             decoration: TextDecoration.underline,
                           ),
                         ),
@@ -171,47 +197,41 @@ class _FoodBookState extends State<FoodBook> {
 
                     const SizedBox(height: 10),
 
-                    // Error message
                     if (isError) Text(errorMessage, style: errorTextStyle),
 
                     const SizedBox(height: 15),
 
-                    // Login Button
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size.fromHeight(50),
-                        backgroundColor: const Color(0xFFD72638), // Berry Red
+                        backgroundColor: const Color(0xFFD72638),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      onPressed: () {
-                        checkLogin(
-                          usernameController.text,
-                          passwordController.text,
-                        );
-                        if (!isError) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const Dashboard(),
+                      onPressed: isLoading
+                          ? null
+                          : () {
+                              checkLogin(
+                                  emailController.text, passwordController.text);
+                            },
+                      child: isLoading
+                          ? const CircularProgressIndicator(
+                              color: Colors.white,
+                            )
+                          : const Text(
+                              "Login",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 2,
+                                fontSize: 16,
+                                color: Color(0xFFFAFAFA),
+                              ),
                             ),
-                          );
-                        }
-                      },
-                      child: const Text(
-                        "Login",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 2,
-                          fontSize: 16,
-                          color: Color(0xFFFAFAFA), // Off-White
-                        ),
-                      ),
                     ),
+
                     const SizedBox(height: 15),
 
-                    // Create account prompt
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -224,14 +244,13 @@ class _FoodBookState extends State<FoodBook> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const RegisterPage(),
-                              ),
+                                  builder: (context) => const RegisterPage()),
                             );
                           },
                           child: const Text(
                             "Sign up",
                             style: TextStyle(
-                              color: Color(0xFF1C1C1C), // Berry Red
+                              color: Color(0xFF1C1C1C),
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -261,11 +280,4 @@ var errorTextStyle = const TextStyle(
   letterSpacing: 1,
   fontSize: 13,
   color: Colors.red,
-);
-
-var textstyle2 = const TextStyle(
-  fontWeight: FontWeight.bold,
-  letterSpacing: 2,
-  fontSize: 14,
-  color: Colors.white,
 );

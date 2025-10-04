@@ -1,5 +1,5 @@
-import 'package:cce106_flutter_project/views/create_recipe.dart';
 import 'package:flutter/material.dart';
+import 'package:cce106_flutter_project/views/create_recipe.dart';
 import 'my_recipes.dart';
 import 'favorites.dart';
 import 'profile.dart';
@@ -58,7 +58,10 @@ class _DashboardState extends State<Dashboard> {
               icon: Icon(Icons.favorite),
               label: 'Favorites',
             ),
-            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person),
+              label: 'Profile',
+            ),
           ],
         ),
       ),
@@ -97,9 +100,7 @@ class DashboardHome extends StatelessWidget {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const CreateRecipePage(),
-                ),
+                MaterialPageRoute(builder: (context) => const CreateRecipePage()),
               );
             },
             child: Container(
@@ -123,17 +124,21 @@ class DashboardHome extends StatelessWidget {
               ),
             ),
           ),
-          // Strong line below for separation
+
+          // Separation line
           Container(
             height: 2,
-            color: Color(0xFF1C1C1C), // ✅ Mustard Yellow
+            color: const Color(0xFF1C1C1C),
             margin: const EdgeInsets.symmetric(vertical: 2),
           ),
 
           // Tabs (Home, Breakfast, Lunch, Dinner)
-          Container(color: Colors.white, child: const TabBarSection()),
+          Container(
+            color: Colors.white,
+            child: const TabBarSection(),
+          ),
 
-          // Recipe List
+          // Recipe list
           Expanded(
             child: ListView(
               children: const [
@@ -159,8 +164,8 @@ class TabBarSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 4,
-      child: Column(
-        children: const [
+      child: const Column(
+        children: [
           TabBar(
             labelColor: Color(0xFFD72638),
             unselectedLabelColor: Color(0xFF1C1C1C),
