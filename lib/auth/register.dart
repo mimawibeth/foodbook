@@ -171,7 +171,6 @@ class RegisterPage extends StatelessWidget {
   }
 }
 
-// ✅ Same curve used in your LoginPage
 class CurveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {

@@ -1,7 +1,6 @@
 import 'package:cce106_flutter_project/auth/register.dart';
 import 'package:cce106_flutter_project/views/dashboard.dart';
 import 'package:flutter/material.dart';
-import 'register.dart'; // <-- Import RegisterPage
 
 class FoodBook extends StatefulWidget {
   const FoodBook({super.key});
@@ -23,12 +22,12 @@ class _FoodBookState extends State<FoodBook> {
     super.initState();
   }
 
-  void checkLogin(username, password) {
+  void checkLogin(String username, String password) {
     setState(() {
-      if (username == "") {
+      if (username.isEmpty) {
         errorMessage = "Please enter your Email";
         isError = true;
-      } else if (password == "") {
+      } else if (password.isEmpty) {
         errorMessage = "Please enter your password";
         isError = true;
       } else {
@@ -41,7 +40,7 @@ class _FoodBookState extends State<FoodBook> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA), // Off-White background
+      backgroundColor: const Color(0xFFFAFAFA),
       body: Column(
         children: [
           // Top branding with curve
@@ -79,20 +78,20 @@ class _FoodBookState extends State<FoodBook> {
                           "Login",
                           style: textstyle.copyWith(
                             fontSize: 25,
-                            color: const Color(0xFF1C1C1C), // Almost Black
+                            color: const Color(0xFF1C1C1C),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 20),
 
-                    // Email label + field
+                    // Email
                     const Text(
                       "Email Address",
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1C1C1C), // Almost Black
+                        color: Color(0xFF1C1C1C),
                       ),
                     ),
                     const SizedBox(height: 5),
@@ -107,7 +106,7 @@ class _FoodBookState extends State<FoodBook> {
                         ),
                         focusedBorder: const OutlineInputBorder(
                           borderSide: BorderSide(
-                            color: Color(0xFF1C1C1C), // Mustard Yellow
+                            color: Color(0xFF1C1C1C),
                             width: 2,
                           ),
                         ),
@@ -116,13 +115,13 @@ class _FoodBookState extends State<FoodBook> {
 
                     const SizedBox(height: 15),
 
-                    // Password label + field
+                    // Password
                     const Text(
                       "Password",
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1C1C1C), // Almost Black
+                        color: Color(0xFF1C1C1C),
                       ),
                     ),
                     const SizedBox(height: 5),
@@ -138,14 +137,14 @@ class _FoodBookState extends State<FoodBook> {
                         ),
                         focusedBorder: const OutlineInputBorder(
                           borderSide: BorderSide(
-                            color: Color(0xFF1C1C1C), // Mustard Yellow
+                            color: Color(0xFF1C1C1C),
                             width: 2,
                           ),
                         ),
                       ),
                     ),
 
-                    // Forgot Password button
+                    // Forgot Password
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
@@ -159,7 +158,7 @@ class _FoodBookState extends State<FoodBook> {
                         child: const Text(
                           "Forgot Password?",
                           style: TextStyle(
-                            color: Color(0xFF1C1C1C), // Almost Black
+                            color: Color(0xFF1C1C1C),
                             decoration: TextDecoration.underline,
                           ),
                         ),
@@ -177,7 +176,7 @@ class _FoodBookState extends State<FoodBook> {
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size.fromHeight(50),
-                        backgroundColor: const Color(0xFFD72638), // Berry Red
+                        backgroundColor: const Color(0xFFD72638),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -202,17 +201,15 @@ class _FoodBookState extends State<FoodBook> {
                           fontWeight: FontWeight.bold,
                           letterSpacing: 2,
                           fontSize: 16,
-                          color: Color(0xFFFAFAFA), // Off-White
+                          color: Color(0xFFFAFAFA),
                         ),
                       ),
                     ),
                     const SizedBox(height: 15),
 
-                    // Create account prompt
+                    // Sign up prompt
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
                       children: [
                         const Text(
                           "Don’t have an account? ",
@@ -269,3 +266,23 @@ var textstyle2 = const TextStyle(
   fontSize: 14,
   color: Colors.white,
 );
+
+class CurveClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    var path = Path();
+    path.lineTo(0, size.height - 50);
+    path.quadraticBezierTo(
+      size.width / 2,
+      size.height,
+      size.width,
+      size.height - 50,
+    );
+    path.lineTo(size.width, 0);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+}
