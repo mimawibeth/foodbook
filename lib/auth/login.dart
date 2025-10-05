@@ -1,7 +1,6 @@
 import 'package:cce106_flutter_project/auth/register.dart';
 import 'package:cce106_flutter_project/views/dashboard.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class FoodBook extends StatefulWidget {
   const FoodBook({super.key});
@@ -11,11 +10,10 @@ class FoodBook extends StatefulWidget {
 }
 
 class _FoodBookState extends State<FoodBook> {
-  TextEditingController emailController = TextEditingController();
+  TextEditingController usernameController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   late String errorMessage;
   late bool isError;
-  bool isLoading = false;
 
   @override
   void initState() {
@@ -24,60 +22,19 @@ class _FoodBookState extends State<FoodBook> {
     super.initState();
   }
 
-  void checkLogin(String email, String password) async {
+  void checkLogin(String username, String password) {
     setState(() {
-      errorMessage = "";
-      isError = false;
-    });
-
-    if (email.isEmpty) {
-      setState(() {
+      if (username.isEmpty) {
         errorMessage = "Please enter your Email";
         isError = true;
-      });
-      return;
-    }
-
-    if (password.isEmpty) {
-      setState(() {
+      } else if (password.isEmpty) {
         errorMessage = "Please enter your password";
         isError = true;
-      });
-      return;
-    }
-
-    setState(() {
-      isLoading = true;
+      } else {
+        errorMessage = "";
+        isError = false;
+      }
     });
-
-    try {
-      // Firebase authentication
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: email.trim(),
-        password: password.trim(),
-      );
-
-      // Successful login, navigate to Dashboard
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const Dashboard()),
-      );
-    } on FirebaseAuthException catch (e) {
-      setState(() {
-        isError = true;
-        if (e.code == 'user-not-found') {
-          errorMessage = "No user found for that email.";
-        } else if (e.code == 'wrong-password') {
-          errorMessage = "Incorrect password.";
-        } else {
-          errorMessage = e.message ?? "Login failed";
-        }
-      });
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
-    }
   }
 
   @override
@@ -87,17 +44,14 @@ class _FoodBookState extends State<FoodBook> {
       body: Column(
         children: [
           // Top branding with curve
-          Container(
-            height: 220,
-            decoration: const BoxDecoration(
-              color: Color(0xFFD72638),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(100),
-                bottomRight: Radius.circular(100),
-              ),
-            ),
-            child: const Center(
-              child: Text(
+          ClipPath(
+            clipper: CurveClipper(),
+            child: Container(
+              height: 230,
+              width: double.infinity,
+              color: const Color(0xFFD72638),
+              alignment: Alignment.center,
+              child: const Text(
                 "FoodBook",
                 style: TextStyle(
                   fontSize: 30,
@@ -116,6 +70,7 @@ class _FoodBookState extends State<FoodBook> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Login title
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -130,6 +85,7 @@ class _FoodBookState extends State<FoodBook> {
                     ),
                     const SizedBox(height: 20),
 
+                    // Email
                     const Text(
                       "Email Address",
                       style: TextStyle(
@@ -140,7 +96,7 @@ class _FoodBookState extends State<FoodBook> {
                     ),
                     const SizedBox(height: 5),
                     TextField(
-                      controller: emailController,
+                      controller: usernameController,
                       decoration: InputDecoration(
                         hintText: "Email Address",
                         filled: true,
@@ -148,11 +104,18 @@ class _FoodBookState extends State<FoodBook> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
+                        focusedBorder: const OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Color(0xFF1C1C1C),
+                            width: 2,
+                          ),
+                        ),
                       ),
                     ),
 
                     const SizedBox(height: 15),
 
+                    // Password
                     const Text(
                       "Password",
                       style: TextStyle(
@@ -172,9 +135,16 @@ class _FoodBookState extends State<FoodBook> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
+                        focusedBorder: const OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Color(0xFF1C1C1C),
+                            width: 2,
+                          ),
+                        ),
                       ),
                     ),
 
+                    // Forgot Password
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
@@ -197,10 +167,12 @@ class _FoodBookState extends State<FoodBook> {
 
                     const SizedBox(height: 10),
 
+                    // Error message
                     if (isError) Text(errorMessage, style: errorTextStyle),
 
                     const SizedBox(height: 15),
 
+                    // Login Button
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size.fromHeight(50),
@@ -209,29 +181,33 @@ class _FoodBookState extends State<FoodBook> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      onPressed: isLoading
-                          ? null
-                          : () {
-                              checkLogin(
-                                emailController.text,
-                                passwordController.text,
-                              );
-                            },
-                      child: isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text(
-                              "Login",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 2,
-                                fontSize: 16,
-                                color: Color(0xFFFAFAFA),
-                              ),
+                      onPressed: () {
+                        checkLogin(
+                          usernameController.text,
+                          passwordController.text,
+                        );
+                        if (!isError) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const Dashboard(),
                             ),
+                          );
+                        }
+                      },
+                      child: const Text(
+                        "Login",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2,
+                          fontSize: 16,
+                          color: Color(0xFFFAFAFA),
+                        ),
+                      ),
                     ),
-
                     const SizedBox(height: 15),
 
+                    // Sign up prompt
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -251,7 +227,7 @@ class _FoodBookState extends State<FoodBook> {
                           child: const Text(
                             "Sign up",
                             style: TextStyle(
-                              color: Color(0xFF1C1C1C),
+                              color: Color.fromARGB(255, 65, 106, 242),
                               fontWeight: FontWeight.bold,
                               decoration: TextDecoration.underline,
                             ),
@@ -283,3 +259,30 @@ var errorTextStyle = const TextStyle(
   fontSize: 13,
   color: Colors.red,
 );
+
+var textstyle2 = const TextStyle(
+  fontWeight: FontWeight.bold,
+  letterSpacing: 2,
+  fontSize: 14,
+  color: Colors.white,
+);
+
+class CurveClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    var path = Path();
+    path.lineTo(0, size.height - 50);
+    path.quadraticBezierTo(
+      size.width / 2,
+      size.height,
+      size.width,
+      size.height - 50,
+    );
+    path.lineTo(size.width, 0);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+}

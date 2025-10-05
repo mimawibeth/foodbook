@@ -4,7 +4,13 @@ import 'auth/login.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(); // Initialize Firebase
+  try {
+    await Firebase.initializeApp();
+    print('✅ Firebase initialized successfully');
+  } catch (e, s) {
+    print('❌ Firebase init error: $e');
+    print(s);
+  }
   runApp(const MyApp());
 }
 
