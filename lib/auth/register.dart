@@ -1,8 +1,121 @@
 import 'package:cce106_flutter_project/auth/login.dart';
 import 'package:flutter/material.dart';
 
-class RegisterPage extends StatelessWidget {
+class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
+
+  @override
+  State<RegisterPage> createState() => _RegisterPageState();
+}
+
+class _RegisterPageState extends State<RegisterPage> {
+  final TextEditingController firstNameController = TextEditingController();
+  final TextEditingController lastNameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController confirmPasswordController =
+      TextEditingController();
+
+  late String errorMessage;
+  late bool isError;
+  bool isLoading = false;
+
+  @override
+  void initState() {
+    errorMessage = "";
+    isError = false;
+    super.initState();
+  }
+
+  void checkRegister() async {
+    setState(() {
+      errorMessage = "";
+      isError = false;
+    });
+
+    if (firstNameController.text.isEmpty) {
+      setState(() {
+        errorMessage = "Please enter your first name";
+        isError = true;
+      });
+      return;
+    }
+    if (lastNameController.text.isEmpty) {
+      setState(() {
+        errorMessage = "Please enter your last name";
+        isError = true;
+      });
+      return;
+    }
+    if (emailController.text.isEmpty) {
+      setState(() {
+        errorMessage = "Please enter your email";
+        isError = true;
+      });
+      return;
+    }
+    if (passwordController.text.isEmpty) {
+      setState(() {
+        errorMessage = "Please enter your password";
+        isError = true;
+      });
+      return;
+    }
+    if (confirmPasswordController.text.isEmpty) {
+      setState(() {
+        errorMessage = "Please confirm your password";
+        isError = true;
+      });
+      return;
+    }
+    if (passwordController.text != confirmPasswordController.text) {
+      setState(() {
+        errorMessage = "Passwords do not match";
+        isError = true;
+      });
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      // ✅ Create user in Firebase Auth
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+
+      // ✅ Save extra user info in Firestore with userId
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .set({
+        'userId': userCredential.user!.uid, // ✅ added userId field
+        'firstName': firstNameController.text.trim(),
+        'lastName': lastNameController.text.trim(),
+        'email': emailController.text.trim(),
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      // ✅ Navigate to Dashboard
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const DashboardHome()),
+      );
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        isError = true;
+        errorMessage = e.message ?? "Registration failed";
+      });
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,21 +145,23 @@ class RegisterPage extends StatelessWidget {
 
           // ✅ Sign Up Form
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 30),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Center(
-                    child: Text(
-                      "Sign Up",
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
+            child: Center(
+              child: SingleChildScrollView(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 25),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 10),
+                      const Text(
+                        "Sign Up",
+                        style: TextStyle(
+                          fontSize: 25,
+                          color: Color(0xFF1C1C1C),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 30),
+                      const SizedBox(height: 25),
 
                   // First and Last Name in a row
                   Row(
@@ -99,24 +214,28 @@ class RegisterPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
 
-                  // Confirm Password
-                  TextField(
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      labelText: "Confirm Password",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+                      TextField(
+                        controller: confirmPasswordController,
+                        obscureText: true,
+                        decoration: InputDecoration(
+                          hintText: "Confirm Password",
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 30),
+                      const SizedBox(height: 15),
 
-                  // Sign Up button
-                  Center(
-                    child: SizedBox(
-                      width: 200,
-                      height: 45,
-                      child: ElevatedButton(
+                      if (isError)
+                        Text(
+                          errorMessage,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      const SizedBox(height: 10),
+
+                      ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFD72638),
                           shape: RoundedRectangleBorder(
