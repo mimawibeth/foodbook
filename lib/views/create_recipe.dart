@@ -89,15 +89,22 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
         'instructions': _instructionsController.text,
         'postedBy': _username, // shown in UI
         'username': _username,
+        // Initialize interaction fields to avoid null checks elsewhere
+        'likes': <String, dynamic>{},
+        'saves': <String, dynamic>{},
+        'commentsCount': 0,
         'timestamp': FieldValue.serverTimestamp(),
       });
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Recipe added successfully")),
       );
 
+      if (!mounted) return;
       Navigator.pop(context);
     } catch (error) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text("Failed to add recipe: $error")));
@@ -134,7 +141,6 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
             padding: const EdgeInsets.only(right: 8.0),
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFF2A541),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),
