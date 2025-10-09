@@ -174,12 +174,26 @@ class _DashboardHomeState extends State<DashboardHome>
         ),
         Container(
           color: Colors.white,
-          child: TabBar(
-            controller: _tabController,
-            labelColor: const Color(0xFFD72638),
-            unselectedLabelColor: const Color(0xFF1C1C1C),
-            indicatorColor: const Color(0xFFD72638),
-            tabs: _mealTypes.map((type) => Tab(text: type)).toList(),
+          width: double.infinity, // full width
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // adjust font size based on available width
+              double fontSize = constraints.maxWidth / (_mealTypes.length * 6);
+              fontSize = fontSize.clamp(12, 16); // min 12, max 16
+
+              return TabBar(
+                controller: _tabController,
+                labelColor: const Color(0xFFD72638),
+                unselectedLabelColor: const Color(0xFF1C1C1C),
+                indicatorColor: const Color(0xFFD72638),
+                labelStyle: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.bold,
+                ),
+                unselectedLabelStyle: TextStyle(fontSize: fontSize),
+                tabs: _mealTypes.map((type) => Tab(text: type)).toList(),
+              );
+            },
           ),
         ),
         Expanded(

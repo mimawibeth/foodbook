@@ -17,8 +17,9 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
   String? _selectedMealType;
   String _username = ""; // will hold firstName + lastName
 
-  final CollectionReference recipes =
-      FirebaseFirestore.instance.collection('recipes');
+  final CollectionReference recipes = FirebaseFirestore.instance.collection(
+    'recipes',
+  );
 
   @override
   void initState() {
@@ -60,18 +61,18 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
         _selectedMealType == null ||
         _ingredientsController.text.isEmpty ||
         _instructionsController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill all fields")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Please fill all fields")));
       return;
     }
 
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("User not logged in")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("User not logged in")));
         return;
       }
 
@@ -81,7 +82,7 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
 
       await docRef.set({
         'recipeId': recipeId, // stored but not shown
-        'userId': user.uid,   // stored but not shown
+        'userId': user.uid, // stored but not shown
         'name': _recipeNameController.text,
         'mealType': _selectedMealType,
         'ingredients': _ingredientsController.text,
@@ -97,9 +98,9 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
 
       Navigator.pop(context);
     } catch (error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to add recipe: $error")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Failed to add recipe: $error")));
     }
   }
 
@@ -122,8 +123,10 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: Color(0xFFFAFAFA)),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Color(0xFFFAFAFA),
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
@@ -131,18 +134,21 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
             padding: const EdgeInsets.only(right: 8.0),
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF2A541),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18)),
-                  elevation: 0),
+                backgroundColor: const Color(0xFFF2A541),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                elevation: 0,
+              ),
               onPressed: addRecipe,
               child: const Text(
                 "Post",
                 style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    letterSpacing: 1),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  letterSpacing: 1,
+                ),
               ),
             ),
           ),
@@ -185,8 +191,10 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
                 TextField(
                   controller: _recipeNameController,
                   decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.restaurant_menu,
-                        color: Color(0xFFD72638)),
+                    prefixIcon: Icon(
+                      Icons.restaurant_menu,
+                      color: Color(0xFFD72638),
+                    ),
                     labelText: "Recipe Name",
                     border: OutlineInputBorder(),
                   ),
@@ -198,14 +206,17 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
                     labelText: "Meal Type",
                     border: OutlineInputBorder(),
                   ),
-                  value: _selectedMealType,
+                  initialValue: _selectedMealType,
                   items: const [
                     DropdownMenuItem(
-                        value: "Breakfast", child: Text("Breakfast")),
+                      value: "Breakfast",
+                      child: Text("Breakfast"),
+                    ),
                     DropdownMenuItem(value: "Lunch", child: Text("Lunch")),
                     DropdownMenuItem(value: "Dinner", child: Text("Dinner")),
                   ],
-                  onChanged: (value) => setState(() => _selectedMealType = value),
+                  onChanged: (value) =>
+                      setState(() => _selectedMealType = value),
                 ),
                 const SizedBox(height: 18),
                 TextField(

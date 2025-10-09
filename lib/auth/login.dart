@@ -1,7 +1,10 @@
-import 'package:cce106_flutter_project/auth/register.dart';
 import 'package:cce106_flutter_project/views/dashboard.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cce106_flutter_project/auth/register.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
+// 🔐 This is your FoodBook Login Page
 class FoodBook extends StatefulWidget {
   const FoodBook({super.key});
 
@@ -10,44 +13,94 @@ class FoodBook extends StatefulWidget {
 }
 
 class _FoodBookState extends State<FoodBook> {
-  TextEditingController usernameController = TextEditingController();
-  TextEditingController passwordController = TextEditingController();
-  late String errorMessage;
-  late bool isError;
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
-  @override
-  void initState() {
-    errorMessage = "";
-    isError = false;
-    super.initState();
-  }
+  String errorMessage = '';
+  bool isError = false;
+  bool isLoading = false;
 
-  void checkLogin(String username, String password) {
+  Future<void> loginUser() async {
     setState(() {
-      if (username.isEmpty) {
-        errorMessage = "Please enter your Email";
-        isError = true;
-      } else if (password.isEmpty) {
-        errorMessage = "Please enter your password";
-        isError = true;
-      } else {
-        errorMessage = "";
-        isError = false;
-      }
+      isError = false;
+      errorMessage = '';
     });
+
+    // ✅ Validate fields
+    if (emailController.text.isEmpty || passwordController.text.isEmpty) {
+      setState(() {
+        isError = true;
+        errorMessage = "Please fill in all fields.";
+      });
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      // ✅ Sign in with Firebase Auth
+      UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(
+            email: emailController.text.trim(),
+            password: passwordController.text.trim(),
+          );
+
+      // ✅ Fetch user info (optional)
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .get();
+
+      final firstName = userDoc.data()?['firstName'] ?? '';
+
+      // ✅ Navigate to home/dashboard
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Welcome back, $firstName!")));
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const Dashboard()),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        isError = true;
+        switch (e.code) {
+          case 'user-not-found':
+            errorMessage = 'No user found for this email.';
+            break;
+          case 'wrong-password':
+            errorMessage = 'Incorrect password.';
+            break;
+          case 'invalid-email':
+            errorMessage = 'Invalid email format.';
+            break;
+          default:
+            errorMessage = e.message ?? 'Login failed. Please try again.';
+        }
+      });
+    } catch (e) {
+      setState(() {
+        isError = true;
+        errorMessage = "Unexpected error: $e";
+      });
+    } finally {
+      setState(() => isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
       body: Column(
         children: [
-          // Top branding with curve
+          // ✅ Curved Header
           ClipPath(
             clipper: CurveClipper(),
             child: Container(
-              height: 230,
+              height: 180,
               width: double.infinity,
               color: const Color(0xFFD72638),
               alignment: Alignment.center,
@@ -61,181 +114,108 @@ class _FoodBookState extends State<FoodBook> {
               ),
             ),
           ),
+          const SizedBox(height: 20),
 
           Expanded(
             child: Center(
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 25),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Login title
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "Login",
-                          style: textstyle.copyWith(
-                            fontSize: 25,
-                            color: const Color(0xFF1C1C1C),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Email
-                    const Text(
-                      "Email Address",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1C1C1C),
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    TextField(
-                      controller: usernameController,
-                      decoration: InputDecoration(
-                        hintText: "Email Address",
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        focusedBorder: const OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: Color(0xFF1C1C1C),
-                            width: 2,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 15),
-
-                    // Password
-                    const Text(
-                      "Password",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1C1C1C),
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    TextField(
-                      controller: passwordController,
-                      obscureText: true,
-                      decoration: InputDecoration(
-                        hintText: "Password",
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        focusedBorder: const OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: Color(0xFF1C1C1C),
-                            width: 2,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // Forgot Password
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Forgot Password clicked"),
-                            ),
-                          );
-                        },
-                        child: const Text(
-                          "Forgot Password?",
-                          style: TextStyle(
-                            color: Color(0xFF1C1C1C),
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    // Error message
-                    if (isError) Text(errorMessage, style: errorTextStyle),
-
-                    const SizedBox(height: 15),
-
-                    // Login Button
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(50),
-                        backgroundColor: const Color(0xFFD72638),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      onPressed: () {
-                        checkLogin(
-                          usernameController.text,
-                          passwordController.text,
-                        );
-                        if (!isError) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const Dashboard(),
-                            ),
-                          );
-                        }
-                      },
-                      child: const Text(
+              child: SingleChildScrollView(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 25),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Text(
                         "Login",
                         style: TextStyle(
+                          fontSize: 25,
+                          color: Color(0xFF1C1C1C),
                           fontWeight: FontWeight.bold,
-                          letterSpacing: 2,
-                          fontSize: 16,
-                          color: Color(0xFFFAFAFA),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 15),
+                      const SizedBox(height: 25),
 
-                    // Sign up prompt
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          "Don’t have an account? ",
-                          style: TextStyle(color: Color(0xFF1C1C1C)),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const RegisterPage(),
-                              ),
-                            );
-                          },
-                          child: const Text(
-                            "Sign up",
-                            style: TextStyle(
-                              color: Color.fromARGB(255, 65, 106, 242),
-                              fontWeight: FontWeight.bold,
-                              decoration: TextDecoration.underline,
-                            ),
+                      // ✅ Email
+                      TextField(
+                        controller: emailController,
+                        decoration: InputDecoration(
+                          labelText: "Email Address",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // ✅ Password
+                      TextField(
+                        controller: passwordController,
+                        obscureText: true,
+                        decoration: InputDecoration(
+                          labelText: "Password",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+
+                      if (isError)
+                        Text(
+                          errorMessage,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      const SizedBox(height: 10),
+
+                      // ✅ Login Button
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFD72638),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onPressed: isLoading ? null : loginUser,
+                        child: isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : const Text(
+                                "Login",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                ),
+                              ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // ✅ Don’t have account?
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text("Don’t have an account? "),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const RegisterPage(),
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              "Sign Up",
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -246,31 +226,11 @@ class _FoodBookState extends State<FoodBook> {
   }
 }
 
-// Text styles
-var textstyle = const TextStyle(
-  fontWeight: FontWeight.bold,
-  letterSpacing: 2,
-  fontSize: 18,
-);
-
-var errorTextStyle = const TextStyle(
-  fontWeight: FontWeight.bold,
-  letterSpacing: 1,
-  fontSize: 13,
-  color: Colors.red,
-);
-
-var textstyle2 = const TextStyle(
-  fontWeight: FontWeight.bold,
-  letterSpacing: 2,
-  fontSize: 14,
-  color: Colors.white,
-);
-
+// ✅ Same curved header style
 class CurveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
-    var path = Path();
+    final path = Path();
     path.lineTo(0, size.height - 50);
     path.quadraticBezierTo(
       size.width / 2,
@@ -284,5 +244,21 @@ class CurveClipper extends CustomClipper<Path> {
   }
 
   @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+// ✅ Placeholder dashboard (you can replace with your actual home screen)
+class DashboardPage extends StatelessWidget {
+  const DashboardPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Welcome to FoodBook!"),
+        backgroundColor: const Color(0xFFD72638),
+      ),
+      body: const Center(child: Text("You are now logged in 🎉")),
+    );
+  }
 }

@@ -3,16 +3,19 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class Profile extends StatelessWidget {
-  const Profile({super.key});
+  final User? user; // optional, defaults to current user
+
+  const Profile({super.key, this.user});
 
   Future<void> toggleLike(String recipeId, Map<String, dynamic> likes) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-    final userId = user.uid;
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+    final userId = currentUser.uid;
 
     final isLiked = likes.containsKey(userId);
-    final recipeRef =
-        FirebaseFirestore.instance.collection('recipes').doc(recipeId);
+    final recipeRef = FirebaseFirestore.instance
+        .collection('recipes')
+        .doc(recipeId);
 
     if (isLiked) {
       likes.remove(userId);
@@ -23,13 +26,14 @@ class Profile extends StatelessWidget {
   }
 
   Future<void> toggleSave(String recipeId, Map<String, dynamic> saves) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-    final userId = user.uid;
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+    final userId = currentUser.uid;
 
     final isSaved = saves.containsKey(userId);
-    final recipeRef =
-        FirebaseFirestore.instance.collection('recipes').doc(recipeId);
+    final recipeRef = FirebaseFirestore.instance
+        .collection('recipes')
+        .doc(recipeId);
 
     if (isSaved) {
       saves.remove(userId);
@@ -41,10 +45,10 @@ class Profile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+    final currentUser = user ?? FirebaseAuth.instance.currentUser;
 
     // Example friends list (replace later if you want dynamic)
-    final List<String> friends = ["Maria Clara", "Juan Dela Cruz", "Jose Rizal"];
+    final List<String> friends = [];
 
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
@@ -80,7 +84,7 @@ class Profile extends StatelessWidget {
           ),
         ],
       ),
-      body: user == null
+      body: currentUser == null
           ? const Center(child: Text("Please log in"))
           : ListView(
               padding: const EdgeInsets.all(16),
@@ -97,8 +101,11 @@ class Profile extends StatelessWidget {
                         const CircleAvatar(
                           radius: 36,
                           backgroundColor: Color(0xFF1C1C1C),
-                          child: Icon(Icons.person,
-                              size: 40, color: Colors.white),
+                          child: Icon(
+                            Icons.person,
+                            size: 40,
+                            color: Colors.white,
+                          ),
                         ),
                         const SizedBox(width: 20),
                         Expanded(
@@ -106,7 +113,7 @@ class Profile extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                user.displayName ?? "Your Name",
+                                currentUser.displayName ?? "Your Name",
                                 style: const TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.bold,
@@ -115,7 +122,7 @@ class Profile extends StatelessWidget {
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                user.email ?? "your.email@example.com",
+                                currentUser.email ?? "your.email@example.com",
                                 style: const TextStyle(
                                   fontSize: 15,
                                   color: Colors.black54,
@@ -147,7 +154,9 @@ class Profile extends StatelessWidget {
                   margin: const EdgeInsets.only(bottom: 16),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        vertical: 12, horizontal: 16),
+                      vertical: 12,
+                      horizontal: 16,
+                    ),
                     child: Row(
                       children: friends
                           .map(
@@ -158,12 +167,16 @@ class Profile extends StatelessWidget {
                                   const CircleAvatar(
                                     radius: 18,
                                     backgroundColor: Color(0xFF1C1C1C),
-                                    child:
-                                        Icon(Icons.person, color: Colors.white),
+                                    child: Icon(
+                                      Icons.person,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                   const SizedBox(height: 4),
-                                  Text(friend,
-                                      style: const TextStyle(fontSize: 12)),
+                                  Text(
+                                    friend,
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
                                 ],
                               ),
                             ),
@@ -189,20 +202,19 @@ class Profile extends StatelessWidget {
                 StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
                       .collection('recipes')
-                      .where('userId', isEqualTo: user.uid)
+                      .where('userId', isEqualTo: currentUser.uid)
                       .snapshots(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(
-                          child: CircularProgressIndicator());
+                      return const Center(child: CircularProgressIndicator());
                     }
                     if (snapshot.hasError) {
-                      return Center(
-                          child: Text("Error: ${snapshot.error}"));
+                      return Center(child: Text("Error: ${snapshot.error}"));
                     }
                     if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                       return const Center(
-                          child: Text("You haven’t posted anything yet"));
+                        child: Text("You haven’t posted anything yet"),
+                      );
                     }
 
                     final recipes = snapshot.data!.docs;
@@ -210,10 +222,12 @@ class Profile extends StatelessWidget {
                     return Column(
                       children: recipes.map((doc) {
                         final data = doc.data() as Map<String, dynamic>;
-                        final likes =
-                            Map<String, dynamic>.from(data['likes'] ?? {});
-                        final saves =
-                            Map<String, dynamic>.from(data['saves'] ?? {});
+                        final likes = Map<String, dynamic>.from(
+                          data['likes'] ?? {},
+                        );
+                        final saves = Map<String, dynamic>.from(
+                          data['saves'] ?? {},
+                        );
 
                         return Card(
                           margin: const EdgeInsets.symmetric(
@@ -237,14 +251,16 @@ class Profile extends StatelessWidget {
                                     const CircleAvatar(
                                       radius: 20,
                                       backgroundColor: Color(0xFF1C1C1C),
-                                      child: Icon(Icons.person,
-                                          color: Colors.white),
+                                      child: Icon(
+                                        Icons.person,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Text(
-                                        user.displayName ??
-                                            user.email!.split('@')[0],
+                                        currentUser.displayName ??
+                                            currentUser.email!.split('@')[0],
                                         style: const TextStyle(
                                           fontWeight: FontWeight.w600,
                                           fontSize: 15,
@@ -252,8 +268,10 @@ class Profile extends StatelessWidget {
                                         ),
                                       ),
                                     ),
-                                    const Icon(Icons.more_vert,
-                                        color: Colors.black54),
+                                    const Icon(
+                                      Icons.more_vert,
+                                      color: Colors.black54,
+                                    ),
                                   ],
                                 ),
                                 const SizedBox(height: 12),
@@ -275,17 +293,20 @@ class Profile extends StatelessWidget {
                                   const SizedBox(height: 8),
                                   const Text(
                                     "Ingredients:",
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.w600),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                   Text(data['ingredients']),
                                 ],
-                                if ((data['instructions'] ?? "").isNotEmpty) ...[
+                                if ((data['instructions'] ?? "")
+                                    .isNotEmpty) ...[
                                   const SizedBox(height: 6),
                                   const Text(
                                     "Instructions:",
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.w600),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                   Text(data['instructions']),
                                 ],
@@ -295,14 +316,15 @@ class Profile extends StatelessWidget {
                                       MainAxisAlignment.spaceAround,
                                   children: [
                                     InkWell(
-                                      onTap: () =>
-                                          toggleLike(doc.id, likes),
+                                      onTap: () => toggleLike(doc.id, likes),
                                       child: Row(
                                         children: [
                                           Icon(
                                             likes.containsKey(
-                                                  FirebaseAuth.instance
-                                                          .currentUser?.uid ??
+                                                  FirebaseAuth
+                                                          .instance
+                                                          .currentUser
+                                                          ?.uid ??
                                                       "",
                                                 )
                                                 ? Icons.favorite
@@ -325,20 +347,22 @@ class Profile extends StatelessWidget {
                                         SizedBox(width: 4),
                                         Text(
                                           "Comment",
-                                          style:
-                                              TextStyle(color: Colors.black54),
+                                          style: TextStyle(
+                                            color: Colors.black54,
+                                          ),
                                         ),
                                       ],
                                     ),
                                     InkWell(
-                                      onTap: () =>
-                                          toggleSave(doc.id, saves),
+                                      onTap: () => toggleSave(doc.id, saves),
                                       child: Row(
                                         children: [
                                           Icon(
                                             saves.containsKey(
-                                                  FirebaseAuth.instance
-                                                          .currentUser?.uid ??
+                                                  FirebaseAuth
+                                                          .instance
+                                                          .currentUser
+                                                          ?.uid ??
                                                       "",
                                                 )
                                                 ? Icons.bookmark
