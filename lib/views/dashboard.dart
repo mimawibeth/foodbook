@@ -40,10 +40,19 @@ class _DashboardState extends State<Dashboard> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        actions: const [
+        actions: [
           Padding(
-            padding: EdgeInsets.only(right: 16.0),
-            child: Icon(Icons.search, color: Color(0xFFFAFAFA)),
+            padding: const EdgeInsets.only(right: 16.0),
+            child: IconButton(
+              icon: const Icon(Icons.search, color: Color(0xFFFAFAFA)),
+              onPressed: () async {
+                final result = await showSearch(
+                  context: context,
+                  delegate: RecipeSearchDelegate(),
+                );
+                // Optionally handle result
+              },
+            ),
           ),
         ],
       ),
@@ -75,6 +84,154 @@ class _DashboardState extends State<Dashboard> {
   }
 }
 
+// --- SEARCH DELEGATE ---
+class RecipeSearchDelegate extends SearchDelegate {
+  @override
+  String get searchFieldLabel => 'Search recipes...';
+
+  @override
+  List<Widget>? buildActions(BuildContext context) {
+    return [
+      IconButton(icon: const Icon(Icons.clear), onPressed: () => query = ''),
+    ];
+  }
+
+  @override
+  Widget? buildLeading(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.arrow_back),
+      onPressed: () => close(context, null),
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    return _buildRecipeResults(query);
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    if (query.isEmpty) {
+      return const Center(child: Text('Type to search recipes'));
+    }
+    return _buildRecipeResults(query);
+  }
+
+  Widget _buildRecipeResults(String searchQuery) {
+    final lowerQuery = searchQuery.toLowerCase();
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _fetchResults(lowerQuery),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final results = snapshot.data ?? [];
+        if (results.isEmpty) {
+          return const Center(child: Text('No results found'));
+        }
+        return ListView.builder(
+          itemCount: results.length,
+          itemBuilder: (context, index) {
+            final data = results[index];
+            if (data['type'] == 'recipe') {
+              final recipeTitle = data['name'] ?? 'No title';
+              final mealType = data['mealType'] ?? '';
+              final ingredients = data['ingredients'] ?? '';
+              final instructions = data['instructions'] ?? '';
+              return ListTile(
+                leading: const Icon(Icons.restaurant_menu),
+                title: Text(recipeTitle),
+                subtitle: Text(mealType),
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text(recipeTitle),
+                      content: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Meal Type: $mealType'),
+                            const SizedBox(height: 8),
+                            Text('Ingredients: $ingredients'),
+                            const SizedBox(height: 8),
+                            Text('Instructions: $instructions'),
+                          ],
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Close'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            } else if (data['type'] == 'user') {
+              final username = data['username'] ?? 'No username';
+              final email = data['email'] ?? '';
+              return ListTile(
+                leading: const Icon(Icons.person),
+                title: Text(username),
+                subtitle: Text(email),
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text(username),
+                      content: Text('Email: $email'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Close'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            } else {
+              return const SizedBox.shrink();
+            }
+          },
+        );
+      },
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchResults(String lowerQuery) async {
+    final recipeSnap = await FirebaseFirestore.instance
+        .collection('recipes')
+        .get();
+    final userSnap = await FirebaseFirestore.instance.collection('users').get();
+
+    final recipeResults = recipeSnap.docs
+        .map((doc) => doc.data())
+        .where(
+          (data) => (data['name'] ?? '').toString().toLowerCase().contains(
+            lowerQuery,
+          ),
+        )
+        .map((data) => {...data, 'type': 'recipe'})
+        .toList();
+
+    final userResults = userSnap.docs
+        .map((doc) => doc.data())
+        .where(
+          (data) => (data['username'] ?? '').toString().toLowerCase().contains(
+            lowerQuery,
+          ),
+        )
+        .map((data) => {...data, 'type': 'user'})
+        .toList();
+
+    return [...recipeResults, ...userResults];
+  }
+}
+
+// ...existing code...
 class DashboardHome extends StatefulWidget {
   const DashboardHome({super.key});
 

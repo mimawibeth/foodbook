@@ -1,3 +1,4 @@
+import 'package:cce106_flutter_project/auth/login.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -80,9 +81,12 @@ class Profile extends StatelessWidget {
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.menu, color: Color(0xFFFAFAFA)),
-            onSelected: (value) {
+            onSelected: (value) async {
               if (value == 'logout') {
-                FirebaseAuth.instance.signOut();
+                await FirebaseAuth.instance.signOut();
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => const FoodBook()),
+                );
               }
             },
             itemBuilder: (context) => [
