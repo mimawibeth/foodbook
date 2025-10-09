@@ -3,9 +3,22 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class Profile extends StatelessWidget {
-  final User? user; // optional, defaults to current user
+  final User? user;
 
   const Profile({super.key, this.user});
+
+  Future<Map<String, String>> _getUserNames(String uid) async {
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .get();
+    final data = doc.data();
+    if (data == null) return {'firstName': '', 'lastName': ''};
+    return {
+      'firstName': data['firstName'] ?? '',
+      'lastName': data['lastName'] ?? '',
+    };
+  }
 
   Future<void> toggleLike(String recipeId, Map<String, dynamic> likes) async {
     final currentUser = FirebaseAuth.instance.currentUser;
@@ -112,13 +125,31 @@ class Profile extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                currentUser.displayName ?? "Your Name",
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1C1C1C),
-                                ),
+                              FutureBuilder<Map<String, String>>(
+                                future: _getUserNames(currentUser!.uid),
+                                builder: (context, snapshot) {
+                                  if (!snapshot.hasData) {
+                                    return const Text(
+                                      "Loading...",
+                                      style: TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF1C1C1C),
+                                      ),
+                                    );
+                                  }
+                                  final firstName =
+                                      snapshot.data!['firstName']!;
+                                  final lastName = snapshot.data!['lastName']!;
+                                  return Text(
+                                    "$firstName $lastName",
+                                    style: const TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF1C1C1C),
+                                    ),
+                                  );
+                                },
                               ),
                               const SizedBox(height: 6),
                               Text(

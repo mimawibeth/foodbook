@@ -12,14 +12,20 @@ class MyRecipes extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFFD72638),
-        title: const Text("My Recipes"),
+        centerTitle: true, // center the title
+        title: const Text(
+          "My Recipes",
+          style: TextStyle(
+            color: Colors.white, // make text white
+          ),
+        ),
       ),
       body: user == null
           ? const Center(child: Text("Please log in"))
           : StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('recipes')
-                  .where('userId', isEqualTo: user.uid) // only this user's recipes
+                  .where('userId', isEqualTo: user.uid)
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -27,14 +33,13 @@ class MyRecipes extends StatelessWidget {
                 }
 
                 if (snapshot.hasError) {
-                  return Center(
-                    child: Text("Error: ${snapshot.error}"),
-                  );
+                  return Center(child: Text("Error: ${snapshot.error}"));
                 }
 
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return const Center(
-                      child: Text("You haven’t posted anything yet"));
+                    child: Text("You haven’t posted anything yet"),
+                  );
                 }
 
                 final recipes = snapshot.data!.docs;
@@ -83,9 +88,7 @@ class MyRecipes extends StatelessWidget {
                               const SizedBox(height: 12),
                               const Text(
                                 "Ingredients:",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                style: TextStyle(fontWeight: FontWeight.w600),
                               ),
                               Text(ingredients),
                             ],
@@ -93,9 +96,7 @@ class MyRecipes extends StatelessWidget {
                               const SizedBox(height: 12),
                               const Text(
                                 "Instructions:",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                style: TextStyle(fontWeight: FontWeight.w600),
                               ),
                               Text(instructions),
                             ],
