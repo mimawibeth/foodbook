@@ -21,10 +21,10 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
   int _followersCount = 0;
   int _followingCount = 0;
   Stream<QuerySnapshot> _userRecipes() {
+    // Use a simple query to avoid requiring a composite index; we'll sort client-side.
     return FirebaseFirestore.instance
         .collection('recipes')
         .where('userId', isEqualTo: widget.userId)
-        .orderBy('timestamp', descending: true)
         .snapshots();
   }
 
@@ -879,9 +879,20 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return const Center(child: Text('No posts yet'));
                 }
-                final docs = snapshot.data!.docs
-                    .where((d) => !_hiddenRecipeIds.contains(d.id))
-                    .toList();
+                final docs =
+                    snapshot.data!.docs
+                        .where((d) => !_hiddenRecipeIds.contains(d.id))
+                        .toList()
+                      ..sort((a, b) {
+                        final ad = a.data() as Map<String, dynamic>;
+                        final bd = b.data() as Map<String, dynamic>;
+                        final at = ad['timestamp'];
+                        final bt = bd['timestamp'];
+                        if (at is Timestamp && bt is Timestamp) {
+                          return bt.compareTo(at);
+                        }
+                        return 0;
+                      });
                 return ListView.builder(
                   itemCount: docs.length,
                   itemBuilder: (context, index) {
@@ -1051,56 +1062,7 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                                 color: Colors.black54,
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  margin: const EdgeInsets.only(right: 8),
-                                  color: Colors.black12,
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.favorite,
-                                        color: Colors.red,
-                                        size: 14,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '${likes.length}',
-                                        style: const TextStyle(fontSize: 12),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  color: Colors.black12,
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.chat_bubble_outline,
-                                        color: Colors.black54,
-                                        size: 14,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '$commentsCount',
-                                        style: const TextStyle(fontSize: 12),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
+                            // Removed inline chips for like/comment counts to match dashboard
                             if (ingredients.isNotEmpty) ...[
                               const SizedBox(height: 8),
                               const Text(

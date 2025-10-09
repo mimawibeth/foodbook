@@ -42,10 +42,18 @@ class _DashboardState extends State<Dashboard> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        actions: const [
+        actions: [
           Padding(
-            padding: EdgeInsets.only(right: 16.0),
-            child: Icon(Icons.search, color: Color(0xFFFAFAFA)),
+            padding: const EdgeInsets.only(right: 16.0),
+            child: IconButton(
+              icon: const Icon(Icons.search, color: Color(0xFFFAFAFA)),
+              onPressed: () async {
+                await showSearch(
+                  context: context,
+                  delegate: RecipeSearchDelegate(),
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -77,6 +85,190 @@ class _DashboardState extends State<Dashboard> {
   }
 }
 
+// --- SEARCH DELEGATE ---
+class RecipeSearchDelegate extends SearchDelegate {
+  @override
+  String get searchFieldLabel => 'Search recipes or users...';
+
+  @override
+  List<Widget>? buildActions(BuildContext context) {
+    return [
+      IconButton(icon: const Icon(Icons.clear), onPressed: () => query = ''),
+    ];
+  }
+
+  @override
+  Widget? buildLeading(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.arrow_back),
+      onPressed: () => close(context, null),
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    return _buildRecipeResults(query);
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    if (query.isEmpty) {
+      return const Center(child: Text('Type to search recipes'));
+    }
+    return _buildRecipeResults(query);
+  }
+
+  Widget _buildRecipeResults(String searchQuery) {
+    final lowerQuery = searchQuery.toLowerCase();
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _fetchResults(lowerQuery),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final results = snapshot.data ?? [];
+        if (results.isEmpty) {
+          return const Center(child: Text('No results found'));
+        }
+        return ListView.builder(
+          itemCount: results.length,
+          itemBuilder: (context, index) {
+            final data = results[index];
+            if (data['type'] == 'recipe') {
+              final recipeTitle = data['name'] ?? 'No title';
+              final mealType = data['mealType'] ?? '';
+              final ingredients = data['ingredients'] ?? '';
+              final instructions = data['instructions'] ?? '';
+              return ListTile(
+                leading: const Icon(Icons.restaurant_menu),
+                title: Text(recipeTitle),
+                subtitle: Text(mealType),
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text(recipeTitle),
+                      content: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Meal Type: $mealType'),
+                            const SizedBox(height: 8),
+                            Text('Ingredients: $ingredients'),
+                            const SizedBox(height: 8),
+                            Text('Instructions: $instructions'),
+                          ],
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Close'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            } else if (data['type'] == 'user') {
+              final displayName = data['displayName'] ?? 'User';
+              final email = data['email'] ?? '';
+              final userId = data['userId'] as String? ?? '';
+              return ListTile(
+                leading: const Icon(Icons.person),
+                title: Text(displayName),
+                subtitle: Text(email),
+                onTap: () {
+                  if (userId.isEmpty) return;
+                  final current = FirebaseAuth.instance.currentUser?.uid;
+                  if (current != null && current == userId) {
+                    // If it's me, switch to Profile tab
+                    Navigator.pop(context);
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => OtherUserProfilePage(
+                          userId: userId,
+                          displayName: displayName,
+                        ),
+                      ),
+                    );
+                  }
+                },
+              );
+            } else {
+              return const SizedBox.shrink();
+            }
+          },
+        );
+      },
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchResults(String lowerQuery) async {
+    final recipeSnap = await FirebaseFirestore.instance
+        .collection('recipes')
+        .get();
+    final userSnap = await FirebaseFirestore.instance.collection('users').get();
+
+    final recipeResults = recipeSnap.docs
+        .map((doc) {
+          final data = doc.data();
+          final haystack = [
+            (data['name'] ?? '').toString(),
+            (data['mealType'] ?? '').toString(),
+            (data['ingredients'] ?? '').toString(),
+            (data['instructions'] ?? '').toString(),
+            (data['postedBy'] ?? '').toString(),
+          ].join(' ').toLowerCase();
+          if (haystack.contains(lowerQuery)) {
+            return {...data, 'type': 'recipe'};
+          }
+          return null;
+        })
+        .whereType<Map<String, dynamic>>()
+        .toList();
+
+    final userResults = userSnap.docs
+        .map((doc) {
+          final data = doc.data();
+          final first = (data['firstName'] ?? '').toString();
+          final last = (data['lastName'] ?? '').toString();
+          final dn = (data['displayName'] ?? '').toString();
+          final email = (data['email'] ?? '').toString();
+          final username = (data['username'] ?? '').toString();
+          final full = [first, last].where((s) => s.isNotEmpty).join(' ');
+          final displayName = dn.isNotEmpty
+              ? dn
+              : (full.isNotEmpty
+                    ? full
+                    : (email.isNotEmpty ? email.split('@').first : 'User'));
+          final haystack = [
+            displayName,
+            first,
+            last,
+            email,
+            username,
+          ].where((s) => s.isNotEmpty).join(' ').toLowerCase();
+          if (haystack.contains(lowerQuery)) {
+            return <String, dynamic>{
+              'type': 'user',
+              'userId': doc.id,
+              'displayName': displayName,
+              'email': email,
+            };
+          }
+          return null;
+        })
+        .whereType<Map<String, dynamic>>()
+        .toList();
+
+    return [...recipeResults, ...userResults];
+  }
+}
+
+// ...existing code...
 class DashboardHome extends StatefulWidget {
   const DashboardHome({super.key});
 
@@ -1370,56 +1562,7 @@ class _DashboardHomeState extends State<DashboardHome>
                               color: Colors.black54,
                             ),
                           ),
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                margin: const EdgeInsets.only(right: 8),
-                                color: Colors.black12,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.favorite,
-                                      color: Colors.red,
-                                      size: 14,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${likes.length}',
-                                      style: const TextStyle(fontSize: 12),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                color: Colors.black12,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.chat_bubble_outline,
-                                      color: Colors.black54,
-                                      size: 14,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '$commentsCount',
-                                      style: const TextStyle(fontSize: 12),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                          // Removed inline chips for like/comment counts under the content
                           if (ingredients.isNotEmpty) ...[
                             const SizedBox(height: 8),
                             const Text(
