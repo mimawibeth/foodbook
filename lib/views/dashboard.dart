@@ -173,7 +173,7 @@ class RecipeSearchDelegate extends SearchDelegate {
             } else if (data['type'] == 'user') {
               final displayName = data['displayName'] ?? 'User';
               final email = data['email'] ?? '';
-              final userId = data['userId'] as String? ?? '';
+              final userId = (data['userId'] ?? '').toString();
               return ListTile(
                 leading: const Icon(Icons.person),
                 title: Text(displayName),
@@ -945,180 +945,6 @@ class _DashboardHomeState extends State<DashboardHome>
     await recipeRef.update({'saves': saves});
   }
 
-  Future<void> _editRecipeDialog(
-    BuildContext context,
-    String recipeId,
-    Map<String, dynamic> data,
-  ) async {
-    final titleController = TextEditingController(text: data['name'] ?? '');
-    final ingredientsController = TextEditingController(
-      text: data['ingredients'] ?? '',
-    );
-    final instructionsController = TextEditingController(
-      text: data['instructions'] ?? '',
-    );
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          backgroundColor: const Color(0xFFFAFAFA),
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD72638),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'Edit Recipe',
-                        style: TextStyle(
-                          color: Color(0xFFFAFAFA),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  TextField(
-                    controller: titleController,
-                    decoration: InputDecoration(
-                      labelText: 'Recipe Title',
-                      labelStyle: const TextStyle(color: Color(0xFFD72638)),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: const BorderSide(
-                          color: Color(0xFFD72638),
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: ingredientsController,
-                    decoration: InputDecoration(
-                      labelText: 'Ingredients',
-                      labelStyle: const TextStyle(color: Color(0xFFF2A541)),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: const BorderSide(
-                          color: Color(0xFFF2A541),
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    maxLines: 2,
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: instructionsController,
-                    decoration: InputDecoration(
-                      labelText: 'Instructions',
-                      labelStyle: const TextStyle(color: Color(0xFFD72638)),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: const BorderSide(
-                          color: Color(0xFFD72638),
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    maxLines: 3,
-                  ),
-                  const SizedBox(height: 22),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      TextButton.icon(
-                        onPressed: () => Navigator.pop(context, false),
-                        icon: const Icon(
-                          Icons.cancel,
-                          color: Color(0xFF1C1C1C),
-                        ),
-                        label: const Text(
-                          'Cancel',
-                          style: TextStyle(
-                            color: Color(0xFF1C1C1C),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD72638),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                        ),
-                        onPressed: () => Navigator.pop(context, true),
-                        icon: const Icon(Icons.save, color: Color(0xFFFAFAFA)),
-                        label: const Text(
-                          'Save',
-                          style: TextStyle(
-                            color: Color(0xFFFAFAFA),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-
-    if (result == true) {
-      await FirebaseFirestore.instance
-          .collection('recipes')
-          .doc(recipeId)
-          .update({
-            'name': titleController.text.trim(),
-            'ingredients': ingredientsController.text.trim(),
-            'instructions': instructionsController.text.trim(),
-          });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Recipe updated')));
-    }
-  }
-
   // _handlePostMenu removed as the inline PopupMenuButtons are used; keeping the codebase clean.
 
   @override
@@ -1200,7 +1026,7 @@ class _DashboardHomeState extends State<DashboardHome>
                   // Exclude posts from users the current user has hidden
                   .where((doc) {
                     final data = doc.data() as Map<String, dynamic>;
-                    final uid = (data['userId'] ?? '') as String;
+                    final uid = (data['userId'] ?? '').toString();
                     return !_hiddenUserIds.contains(uid);
                   })
                   .toList();
@@ -1213,14 +1039,14 @@ class _DashboardHomeState extends State<DashboardHome>
                 itemCount: recipes.length,
                 itemBuilder: (context, index) {
                   final data = recipes[index].data() as Map<String, dynamic>;
-                  final username = data['postedBy'] ?? "Your Name";
+                  final username = (data['postedBy'] ?? "Your Name").toString();
                   final recipeTitle = data['name'] ?? "No title";
                   final mealType = data['mealType'] ?? "";
                   final ingredients = data['ingredients'] ?? "";
                   final instructions = data['instructions'] ?? "";
                   final likes = Map<String, dynamic>.from(data['likes'] ?? {});
                   final saves = Map<String, dynamic>.from(data['saves'] ?? {});
-                  final authorId = (data['userId'] ?? '') as String;
+                  final authorId = (data['userId'] ?? '').toString();
                   final commentsCount = (data['commentsCount'] is int)
                       ? (data['commentsCount'] as int)
                       : 0;
@@ -1293,10 +1119,14 @@ class _DashboardHomeState extends State<DashboardHome>
                                   ),
                                   onSelected: (value) async {
                                     if (value == 'edit') {
-                                      await _editRecipeDialog(
+                                      Navigator.push(
                                         context,
-                                        recipes[index].id,
-                                        data,
+                                        MaterialPageRoute(
+                                          builder: (_) => CreateRecipePage(
+                                            recipeId: recipes[index].id,
+                                            initialData: data,
+                                          ),
+                                        ),
                                       );
                                     } else if (value == 'delete') {
                                       final confirm = await showDialog<bool>(
@@ -1326,17 +1156,33 @@ class _DashboardHomeState extends State<DashboardHome>
                                         ),
                                       );
                                       if (confirm == true) {
-                                        await FirebaseFirestore.instance
-                                            .collection('recipes')
-                                            .doc(recipes[index].id)
-                                            .delete();
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Post deleted'),
-                                          ),
-                                        );
+                                        try {
+                                          await FirebaseFirestore.instance
+                                              .collection('recipes')
+                                              .doc(recipes[index].id)
+                                              .delete();
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text('Post deleted'),
+                                              ),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Failed to delete: $e',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        }
                                       }
                                     }
                                   },

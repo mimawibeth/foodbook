@@ -989,16 +989,30 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                                         ),
                                       );
                                       if (confirm == true) {
-                                        await FirebaseFirestore.instance
-                                            .collection('recipes')
-                                            .doc(recipeId)
-                                            .delete();
-                                        if (mounted) {
+                                        try {
+                                          await FirebaseFirestore.instance
+                                              .collection('recipes')
+                                              .doc(recipeId)
+                                              .delete();
+                                          if (!mounted) return;
+                                          // ignore: use_build_context_synchronously
                                           ScaffoldMessenger.of(
                                             context,
                                           ).showSnackBar(
                                             const SnackBar(
                                               content: Text('Post deleted'),
+                                            ),
+                                          );
+                                        } catch (e) {
+                                          if (!mounted) return;
+                                          // ignore: use_build_context_synchronously
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Failed to delete: $e',
+                                              ),
                                             ),
                                           );
                                         }

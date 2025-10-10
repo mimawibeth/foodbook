@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class CreateRecipePage extends StatefulWidget {
-  const CreateRecipePage({super.key});
+  final String? recipeId;
+  final Map<String, dynamic>? initialData;
+
+  const CreateRecipePage({super.key, this.recipeId, this.initialData});
 
   @override
   State<CreateRecipePage> createState() => _CreateRecipePageState();
@@ -25,6 +28,16 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
   void initState() {
     super.initState();
     _fetchUserName();
+    // If initialData provided (editing), prefill fields after a short delay
+    if (widget.initialData != null) {
+      final d = widget.initialData!;
+      _recipeNameController.text = (d['name'] ?? '').toString();
+      _ingredientsController.text = (d['ingredients'] ?? '').toString();
+      _instructionsController.text = (d['instructions'] ?? '').toString();
+      _selectedMealType = (d['mealType'] ?? '').toString().isNotEmpty
+          ? (d['mealType']?.toString())
+          : null;
+    }
   }
 
   Future<void> _fetchUserName() async {
@@ -76,29 +89,47 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
         return;
       }
 
-      // Generate new recipe document
-      final docRef = recipes.doc();
-      final recipeId = docRef.id; // unique Firestore ID
+      // If recipeId provided, update existing doc; otherwise create new
+      if (widget.recipeId != null) {
+        final docRef = recipes.doc(widget.recipeId);
+        await docRef.update({
+          'name': _recipeNameController.text,
+          'mealType': _selectedMealType,
+          'ingredients': _ingredientsController.text,
+          'instructions': _instructionsController.text,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+      } else {
+        // Generate new recipe document
+        final docRef = recipes.doc();
+        final recipeId = docRef.id; // unique Firestore ID
 
-      await docRef.set({
-        'recipeId': recipeId, // stored but not shown
-        'userId': user.uid, // stored but not shown
-        'name': _recipeNameController.text,
-        'mealType': _selectedMealType,
-        'ingredients': _ingredientsController.text,
-        'instructions': _instructionsController.text,
-        'postedBy': _username, // shown in UI
-        'username': _username,
-        // Initialize interaction fields to avoid null checks elsewhere
-        'likes': <String, dynamic>{},
-        'saves': <String, dynamic>{},
-        'commentsCount': 0,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
+        await docRef.set({
+          'recipeId': recipeId, // stored but not shown
+          'userId': user.uid, // stored but not shown
+          'name': _recipeNameController.text,
+          'mealType': _selectedMealType,
+          'ingredients': _ingredientsController.text,
+          'instructions': _instructionsController.text,
+          'postedBy': _username, // shown in UI
+          'username': _username,
+          // Initialize interaction fields to avoid null checks elsewhere
+          'likes': <String, dynamic>{},
+          'saves': <String, dynamic>{},
+          'commentsCount': 0,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+      }
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Recipe added successfully")),
+        SnackBar(
+          content: Text(
+            widget.recipeId != null
+                ? "Recipe updated"
+                : "Recipe added successfully",
+          ),
+        ),
       );
 
       if (!mounted) return;

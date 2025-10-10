@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'follow_list.dart';
+import 'edit_profile.dart';
+import 'create_recipe.dart';
 
 class Profile extends StatelessWidget {
   final User? user;
@@ -275,7 +277,8 @@ class Profile extends StatelessWidget {
                             >
                             grouped = {};
                             for (final r in replies) {
-                              final pid = r.data()['parentId'] as String;
+                              final pid = r.data()['parentId'] as String?;
+                              if (pid == null) continue;
                               grouped.putIfAbsent(pid, () => []);
                               grouped[pid]!.add(r);
                             }
@@ -696,6 +699,7 @@ class Profile extends StatelessWidget {
             onSelected: (value) async {
               if (value == 'logout') {
                 await FirebaseAuth.instance.signOut();
+                if (!context.mounted) return;
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(builder: (context) => const FoodBook()),
                 );
@@ -740,6 +744,21 @@ class Profile extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              Align(
+                                alignment: Alignment.topRight,
+                                child: TextButton.icon(
+                                  onPressed: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => EditProfilePage(
+                                        userId: currentUser.uid,
+                                      ),
+                                    ),
+                                  ),
+                                  icon: const Icon(Icons.edit, size: 16),
+                                  label: const Text('Edit'),
+                                ),
+                              ),
                               FutureBuilder<Map<String, String>>(
                                 future: _getUserNames(currentUser.uid),
                                 builder: (context, snapshot) {
@@ -812,20 +831,36 @@ class Profile extends StatelessWidget {
                                           );
                                         },
                                         child: Row(
-                                          children: const [
-                                            Icon(
+                                          children: [
+                                            const Icon(
                                               Icons.groups,
                                               size: 16,
                                               color: Colors.black54,
                                             ),
-                                            SizedBox(width: 4),
+                                            const SizedBox(width: 4),
+                                            GestureDetector(
+                                              onTap: () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) =>
+                                                        FollowListPage(
+                                                          userId:
+                                                              currentUser.uid,
+                                                          title: 'Followers',
+                                                          showFollowers: true,
+                                                        ),
+                                                  ),
+                                                );
+                                              },
+                                              child: Text(
+                                                '${followers.length} followers',
+                                                style: const TextStyle(
+                                                  color: Colors.black54,
+                                                ),
+                                              ),
+                                            ),
                                           ],
-                                        ),
-                                      ),
-                                      Text(
-                                        '${followers.length} followers',
-                                        style: const TextStyle(
-                                          color: Colors.black54,
                                         ),
                                       ),
                                       const SizedBox(width: 12),
@@ -843,20 +878,36 @@ class Profile extends StatelessWidget {
                                           );
                                         },
                                         child: Row(
-                                          children: const [
-                                            Icon(
+                                          children: [
+                                            const Icon(
                                               Icons.person_add_alt_1,
                                               size: 16,
                                               color: Colors.black54,
                                             ),
-                                            SizedBox(width: 4),
+                                            const SizedBox(width: 4),
+                                            GestureDetector(
+                                              onTap: () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) =>
+                                                        FollowListPage(
+                                                          userId:
+                                                              currentUser.uid,
+                                                          title: 'Following',
+                                                          showFollowers: false,
+                                                        ),
+                                                  ),
+                                                );
+                                              },
+                                              child: Text(
+                                                '${following.length} following',
+                                                style: const TextStyle(
+                                                  color: Colors.black54,
+                                                ),
+                                              ),
+                                            ),
                                           ],
-                                        ),
-                                      ),
-                                      Text(
-                                        '${following.length} following',
-                                        style: const TextStyle(
-                                          color: Colors.black54,
                                         ),
                                       ),
                                     ],
@@ -931,8 +982,8 @@ class Profile extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  children: const [
-                                    CircleAvatar(
+                                  children: [
+                                    const CircleAvatar(
                                       radius: 20,
                                       backgroundColor: Color(0xFF1C1C1C),
                                       child: Icon(
@@ -940,8 +991,8 @@ class Profile extends StatelessWidget {
                                         color: Colors.white,
                                       ),
                                     ),
-                                    SizedBox(width: 10),
-                                    Expanded(
+                                    const SizedBox(width: 10),
+                                    const Expanded(
                                       child: Text(
                                         'You',
                                         style: TextStyle(
@@ -951,9 +1002,104 @@ class Profile extends StatelessWidget {
                                         ),
                                       ),
                                     ),
-                                    Icon(
-                                      Icons.more_vert,
-                                      color: Colors.black54,
+                                    PopupMenuButton<String>(
+                                      icon: const Icon(
+                                        Icons.more_vert,
+                                        color: Colors.black54,
+                                      ),
+                                      onSelected: (val) async {
+                                        if (val == 'edit') {
+                                          // Navigate to create recipe page in edit mode
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => CreateRecipePage(
+                                                recipeId: doc.id,
+                                                initialData: data,
+                                              ),
+                                            ),
+                                          );
+                                        } else if (val == 'delete') {
+                                          final confirm = await showDialog<bool>(
+                                            context: context,
+                                            builder: (ctx) => AlertDialog(
+                                              title: const Text(
+                                                'Delete recipe',
+                                              ),
+                                              content: const Text(
+                                                'Are you sure you want to delete this recipe? This action cannot be undone.',
+                                              ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.pop(ctx, false),
+                                                  child: const Text('Cancel'),
+                                                ),
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.pop(ctx, true),
+                                                  child: const Text(
+                                                    'Delete',
+                                                    style: TextStyle(
+                                                      color: Colors.red,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                          if (confirm == true) {
+                                            try {
+                                              await FirebaseFirestore.instance
+                                                  .collection('recipes')
+                                                  .doc(doc.id)
+                                                  .delete();
+                                              if (context.mounted) {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                      'Recipe deleted',
+                                                    ),
+                                                  ),
+                                                );
+                                              }
+                                            } catch (e) {
+                                              if (context.mounted) {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      'Failed to delete: $e',
+                                                    ),
+                                                  ),
+                                                );
+                                              }
+                                            }
+                                          }
+                                        }
+                                      },
+                                      itemBuilder: (ctx) => const [
+                                        PopupMenuItem(
+                                          value: 'edit',
+                                          child: ListTile(
+                                            leading: Icon(Icons.edit),
+                                            title: Text('Edit'),
+                                          ),
+                                        ),
+                                        PopupMenuItem(
+                                          value: 'delete',
+                                          child: ListTile(
+                                            leading: Icon(
+                                              Icons.delete,
+                                              color: Colors.red,
+                                            ),
+                                            title: Text('Remove'),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
