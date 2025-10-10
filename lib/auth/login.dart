@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cce106_flutter_project/auth/register.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// 🔐 This is your FoodBook Login Page
+// 🔐 FoodBook Login Page
 class FoodBook extends StatefulWidget {
   const FoodBook({super.key});
 
@@ -19,6 +19,7 @@ class _FoodBookState extends State<FoodBook> {
   String errorMessage = '';
   bool isError = false;
   bool isLoading = false;
+  bool _obscurePassword = true; // 👁️ Added for show/hide password
 
   Future<void> loginUser() async {
     setState(() {
@@ -26,7 +27,6 @@ class _FoodBookState extends State<FoodBook> {
       errorMessage = '';
     });
 
-    // ✅ Validate fields
     if (emailController.text.isEmpty || passwordController.text.isEmpty) {
       setState(() {
         isError = true;
@@ -38,14 +38,12 @@ class _FoodBookState extends State<FoodBook> {
     setState(() => isLoading = true);
 
     try {
-      // ✅ Sign in with Firebase Auth
       UserCredential userCredential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(
             email: emailController.text.trim(),
             password: passwordController.text.trim(),
           );
 
-      // ✅ Fetch user info (optional)
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(userCredential.user!.uid)
@@ -53,7 +51,6 @@ class _FoodBookState extends State<FoodBook> {
 
       final firstName = userDoc.data()?['firstName'] ?? '';
 
-      // ✅ Navigate to home/dashboard
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -146,14 +143,26 @@ class _FoodBookState extends State<FoodBook> {
                       ),
                       const SizedBox(height: 20),
 
-                      // ✅ Password
+                      // ✅ Password (with view toggle)
                       TextField(
                         controller: passwordController,
-                        obscureText: true,
+                        obscureText: _obscurePassword,
                         decoration: InputDecoration(
                           labelText: "Password",
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
                           ),
                         ),
                       ),
@@ -247,7 +256,7 @@ class CurveClipper extends CustomClipper<Path> {
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
 
-// ✅ Placeholder dashboard (you can replace with your actual home screen)
+// ✅ Placeholder dashboard
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
 

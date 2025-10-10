@@ -22,13 +22,16 @@ class _RegisterPageState extends State<RegisterPage> {
   bool isError = false;
   bool isLoading = false;
 
+  // 👁️ Add states for showing/hiding passwords
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+
   Future<void> checkRegister() async {
     setState(() {
       errorMessage = "";
       isError = false;
     });
 
-    // ✅ Input validation
     if (firstNameController.text.isEmpty ||
         lastNameController.text.isEmpty ||
         emailController.text.isEmpty ||
@@ -52,14 +55,12 @@ class _RegisterPageState extends State<RegisterPage> {
     setState(() => isLoading = true);
 
     try {
-      // ✅ Create user in Firebase Auth
       UserCredential userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
             email: emailController.text.trim(),
             password: passwordController.text.trim(),
           );
 
-      // ✅ Save extra user info in Firestore
       await FirebaseFirestore.instance
           .collection('users')
           .doc(userCredential.user!.uid)
@@ -71,7 +72,6 @@ class _RegisterPageState extends State<RegisterPage> {
             'createdAt': FieldValue.serverTimestamp(),
           });
 
-      // ✅ Navigate to login after success
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -183,27 +183,52 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                       const SizedBox(height: 20),
 
-                      // ✅ Password
+                      // ✅ Password with view toggle
                       TextField(
                         controller: passwordController,
-                        obscureText: true,
+                        obscureText: _obscurePassword,
                         decoration: InputDecoration(
                           labelText: "Password",
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                          ),
                         ),
                       ),
                       const SizedBox(height: 20),
 
-                      // ✅ Confirm Password
+                      // ✅ Confirm Password with view toggle
                       TextField(
                         controller: confirmPasswordController,
-                        obscureText: true,
+                        obscureText: _obscureConfirmPassword,
                         decoration: InputDecoration(
                           labelText: "Confirm Password",
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureConfirmPassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscureConfirmPassword =
+                                    !_obscureConfirmPassword;
+                              });
+                            },
                           ),
                         ),
                       ),
