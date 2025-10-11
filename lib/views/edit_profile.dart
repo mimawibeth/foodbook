@@ -2,6 +2,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+// 🎨 Color Palette - Food themed (consistent across app)
+class AppColors {
+  static const primary = Color(0xFFFF6B35); // Warm Orange
+  static const secondary = Color(0xFFFFBE0B); // Golden Yellow
+  static const accent = Color(0xFFFB5607); // Vibrant Red-Orange
+  static const dark = Color(0xFF2D3142); // Dark Blue-Gray
+  static const light = Color(0xFFFFFBF0); // Cream White
+  static const success = Color(0xFF06A77D); // Fresh Green
+}
+
 class EditProfilePage extends StatefulWidget {
   final String userId;
 
@@ -17,6 +27,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late TextEditingController _lastController;
   late TextEditingController _displayController;
   bool _saving = false;
+  bool _loading = true;
 
   @override
   void initState() {
@@ -36,7 +47,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _firstController.text = (data['firstName'] ?? '').toString();
     _lastController.text = (data['lastName'] ?? '').toString();
     _displayController.text = (data['displayName'] ?? '').toString();
-    if (mounted) setState(() {});
+    if (mounted) setState(() => _loading = false);
   }
 
   Future<void> _save() async {
@@ -64,15 +75,35 @@ class _EditProfilePageState extends State<EditProfilePage> {
       }
 
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Profile updated')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 12),
+              const Text('Profile updated'),
+            ],
+          ),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
       Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to save: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save: $e'),
+            backgroundColor: Colors.red.shade400,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -90,68 +121,312 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.light,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFD72638),
-        title: const Text('Edit Profile'),
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.primary, AppColors.accent],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.edit, color: Colors.white, size: 24),
+            const SizedBox(width: 8),
+            const Text(
+              'Edit Profile',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            ),
+          ],
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.close, color: Colors.white, size: 20),
+          ),
           onPressed: () => Navigator.pop(context, false),
         ),
-        actions: [
-          TextButton(
-            onPressed: _saving ? null : _save,
-            child: const Text('Save', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              TextFormField(
-                controller: _firstController,
-                decoration: const InputDecoration(labelText: 'First name'),
-                validator: (v) {
-                  if ((v ?? '').trim().isEmpty &&
-                      _displayController.text.trim().isEmpty) {
-                    return 'Please provide a first name or display name';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _lastController,
-                decoration: const InputDecoration(labelText: 'Last name'),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _displayController,
-                decoration: const InputDecoration(labelText: 'Display name'),
-                validator: (v) {
-                  if ((v ?? '').trim().isEmpty &&
-                      _firstController.text.trim().isEmpty) {
-                    return 'Please provide a display name or first name';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _saving ? null : _save,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFD72638),
+      body: _loading
+          ? Center(child: CircularProgressIndicator(color: AppColors.primary))
+          : SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Profile Avatar Section
+                      Center(
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [AppColors.primary, AppColors.accent],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                shape: BoxShape.circle,
+                              ),
+                              child: CircleAvatar(
+                                radius: 50,
+                                backgroundColor: Colors.white,
+                                child: Icon(
+                                  Icons.person,
+                                  size: 60,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              "Update Your Profile",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.dark,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "Keep your information current",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppColors.dark.withOpacity(0.6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Form Fields Card
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Personal Information",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.dark,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+
+                            // First Name Field
+                            TextFormField(
+                              controller: _firstController,
+                              decoration: InputDecoration(
+                                labelText: 'First Name',
+                                labelStyle: TextStyle(
+                                  color: AppColors.dark.withOpacity(0.6),
+                                ),
+                                prefixIcon: Icon(
+                                  Icons.person_outline,
+                                  color: AppColors.primary,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: AppColors.primary,
+                                    width: 2,
+                                  ),
+                                ),
+                                filled: true,
+                                fillColor: AppColors.light,
+                              ),
+                              validator: (v) {
+                                if ((v ?? '').trim().isEmpty &&
+                                    _displayController.text.trim().isEmpty) {
+                                  return 'Please provide a first name or display name';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Last Name Field
+                            TextFormField(
+                              controller: _lastController,
+                              decoration: InputDecoration(
+                                labelText: 'Last Name',
+                                labelStyle: TextStyle(
+                                  color: AppColors.dark.withOpacity(0.6),
+                                ),
+                                prefixIcon: Icon(
+                                  Icons.person_outline,
+                                  color: AppColors.primary,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: AppColors.primary,
+                                    width: 2,
+                                  ),
+                                ),
+                                filled: true,
+                                fillColor: AppColors.light,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Display Name Field
+                            TextFormField(
+                              controller: _displayController,
+                              decoration: InputDecoration(
+                                labelText: 'Display Name',
+                                labelStyle: TextStyle(
+                                  color: AppColors.dark.withOpacity(0.6),
+                                ),
+                                prefixIcon: Icon(
+                                  Icons.badge_outlined,
+                                  color: AppColors.primary,
+                                ),
+                                hintText: 'How others see you',
+                                hintStyle: TextStyle(
+                                  color: AppColors.dark.withOpacity(0.3),
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: AppColors.primary,
+                                    width: 2,
+                                  ),
+                                ),
+                                filled: true,
+                                fillColor: AppColors.light,
+                              ),
+                              validator: (v) {
+                                if ((v ?? '').trim().isEmpty &&
+                                    _firstController.text.trim().isEmpty) {
+                                  return 'Please provide a display name or first name';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Info Card
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: AppColors.primary.withOpacity(0.3),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.info_outline,
+                                    color: AppColors.primary,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      "Your display name is what appears on your recipes",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.dark.withOpacity(0.7),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Save Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _saving ? null : _save,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 3,
+                          ),
+                          child: _saving
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.save,
+                                      size: 20,
+                                      color: Colors.white,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text(
+                                      'Save Changes',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                child: _saving
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Save'),
               ),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 }

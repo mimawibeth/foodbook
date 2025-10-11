@@ -2,6 +2,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+// 🎨 Color Palette - Food themed (consistent across app)
+class AppColors {
+  static const primary = Color(0xFFFF6B35); // Warm Orange
+  static const secondary = Color(0xFFFFBE0B); // Golden Yellow
+  static const accent = Color(0xFFFB5607); // Vibrant Red-Orange
+  static const dark = Color(0xFF2D3142); // Dark Blue-Gray
+  static const light = Color(0xFFFFFBF0); // Cream White
+  static const success = Color(0xFF06A77D); // Fresh Green
+}
+
 class CreateRecipePage extends StatefulWidget {
   final String? recipeId;
   final Map<String, dynamic>? initialData;
@@ -18,7 +28,7 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
   final TextEditingController _instructionsController = TextEditingController();
 
   String? _selectedMealType;
-  String _username = ""; // will hold firstName + lastName
+  String _username = "";
 
   final CollectionReference recipes = FirebaseFirestore.instance.collection(
     'recipes',
@@ -28,7 +38,6 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
   void initState() {
     super.initState();
     _fetchUserName();
-    // If initialData provided (editing), prefill fields after a short delay
     if (widget.initialData != null) {
       final d = widget.initialData!;
       _recipeNameController.text = (d['name'] ?? '').toString();
@@ -62,7 +71,6 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
         }
       }
     } catch (e) {
-      // fallback if fetch fails
       setState(() {
         _username = "Unknown User";
       });
@@ -74,22 +82,35 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
         _selectedMealType == null ||
         _ingredientsController.text.isEmpty ||
         _instructionsController.text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Please fill all fields")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("Please fill all fields"),
+          backgroundColor: Colors.red.shade400,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
       return;
     }
 
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text("User not logged in")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text("User not logged in"),
+            backgroundColor: Colors.red.shade400,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
         return;
       }
 
-      // If recipeId provided, update existing doc; otherwise create new
       if (widget.recipeId != null) {
         final docRef = recipes.doc(widget.recipeId);
         await docRef.update({
@@ -100,20 +121,18 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
           'timestamp': FieldValue.serverTimestamp(),
         });
       } else {
-        // Generate new recipe document
         final docRef = recipes.doc();
-        final recipeId = docRef.id; // unique Firestore ID
+        final recipeId = docRef.id;
 
         await docRef.set({
-          'recipeId': recipeId, // stored but not shown
-          'userId': user.uid, // stored but not shown
+          'recipeId': recipeId,
+          'userId': user.uid,
           'name': _recipeNameController.text,
           'mealType': _selectedMealType,
           'ingredients': _ingredientsController.text,
           'instructions': _instructionsController.text,
-          'postedBy': _username, // shown in UI
+          'postedBy': _username,
           'username': _username,
-          // Initialize interaction fields to avoid null checks elsewhere
           'likes': <String, dynamic>{},
           'saves': <String, dynamic>{},
           'commentsCount': 0,
@@ -124,10 +143,21 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            widget.recipeId != null
-                ? "Recipe updated"
-                : "Recipe added successfully",
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 12),
+              Text(
+                widget.recipeId != null
+                    ? "Recipe updated"
+                    : "Recipe added successfully",
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
           ),
         ),
       );
@@ -136,9 +166,16 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
       Navigator.pop(context);
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Failed to add recipe: $error")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Failed to add recipe: $error"),
+          backgroundColor: Colors.red.shade400,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
     }
   }
 
@@ -153,132 +190,403 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: AppColors.light,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFD72638),
-        title: const Text(
-          "Share Recipe",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.primary, AppColors.accent],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.edit_note, color: Colors.white, size: 28),
+            const SizedBox(width: 8),
+            Text(
+              widget.recipeId != null ? "Edit Recipe" : "Share Recipe",
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            ),
+          ],
         ),
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Color(0xFFFAFAFA),
+          icon: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
           ),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
+            padding: const EdgeInsets.only(right: 12.0),
+            child: IconButton(
+              icon: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                elevation: 0,
-              ),
-              onPressed: addRecipe,
-              child: const Text(
-                "Post",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  letterSpacing: 1,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Card(
-          color: Colors.white,
-          elevation: 4,
-          shape: const RoundedRectangleBorder(),
-          margin: const EdgeInsets.symmetric(vertical: 16),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: ListView(
-              shrinkWrap: true,
-              children: [
-                // Profile row with username
-                Row(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const CircleAvatar(
-                      radius: 24,
-                      backgroundColor: Color(0xFFD72638),
-                      child: Icon(Icons.person, size: 32, color: Colors.white),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        _username.isEmpty ? "Loading..." : _username,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1C1C1C),
-                        ),
+                    const Icon(Icons.send, color: Colors.white, size: 16),
+                    const SizedBox(width: 4),
+                    const Text(
+                      "Post",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 28),
-                TextField(
-                  controller: _recipeNameController,
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(
-                      Icons.restaurant_menu,
-                      color: Color(0xFFD72638),
-                    ),
-                    labelText: "Recipe Name",
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.fastfood, color: Color(0xFFD72638)),
-                    labelText: "Meal Type",
-                    border: OutlineInputBorder(),
-                  ),
-                  initialValue: _selectedMealType,
-                  items: const [
-                    DropdownMenuItem(
-                      value: "Breakfast",
-                      child: Text("Breakfast"),
-                    ),
-                    DropdownMenuItem(value: "Lunch", child: Text("Lunch")),
-                    DropdownMenuItem(value: "Dinner", child: Text("Dinner")),
-                  ],
-                  onChanged: (value) =>
-                      setState(() => _selectedMealType = value),
-                ),
-                const SizedBox(height: 18),
-                TextField(
-                  controller: _ingredientsController,
-                  maxLines: 4,
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.list_alt, color: Color(0xFFD72638)),
-                    labelText: "Ingredients",
-                    border: OutlineInputBorder(),
-                    alignLabelWithHint: true,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                TextField(
-                  controller: _instructionsController,
-                  maxLines: 6,
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.menu_book, color: Color(0xFFD72638)),
-                    labelText: "Instructions",
-                    border: OutlineInputBorder(),
-                    alignLabelWithHint: true,
-                  ),
-                ),
-              ],
+              ),
+              onPressed: addRecipe,
             ),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ✨ Enhanced Profile Card
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [AppColors.primary, AppColors.accent],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                      child: CircleAvatar(
+                        radius: 28,
+                        backgroundColor: Colors.white,
+                        child: Icon(
+                          Icons.person,
+                          size: 32,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _username.isEmpty ? "Loading..." : _username,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.dark,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.public,
+                                size: 14,
+                                color: AppColors.dark.withOpacity(0.5),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                "Everyone",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.dark.withOpacity(0.5),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // ✨ Recipe Form Card
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Recipe Details",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.dark,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Recipe Name Field
+                    TextField(
+                      controller: _recipeNameController,
+                      decoration: InputDecoration(
+                        prefixIcon: Icon(
+                          Icons.restaurant_menu,
+                          color: AppColors.primary,
+                        ),
+                        labelText: "Recipe Name",
+                        labelStyle: TextStyle(
+                          color: AppColors.dark.withOpacity(0.6),
+                        ),
+                        filled: true,
+                        fillColor: AppColors.light,
+                        // Remove border, use subtle colored underline
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: AppColors.primary.withOpacity(0.3),
+                            width: 2,
+                          ),
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: AppColors.primary,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Meal Type Dropdown
+                    DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        prefixIcon: Icon(
+                          Icons.fastfood,
+                          color: AppColors.primary,
+                        ),
+                        labelText: "Meal Type",
+                        labelStyle: TextStyle(
+                          color: AppColors.dark.withOpacity(0.6),
+                        ),
+                        filled: true,
+                        fillColor: AppColors.light,
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: AppColors.primary.withOpacity(0.3),
+                            width: 2,
+                          ),
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: AppColors.primary,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                      value: _selectedMealType,
+                      items: [
+                        DropdownMenuItem(
+                          value: "Breakfast",
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.wb_sunny,
+                                size: 18,
+                                color: AppColors.secondary,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text("Breakfast"),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: "Lunch",
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.lunch_dining,
+                                size: 18,
+                                color: AppColors.primary,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text("Lunch"),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: "Dinner",
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.dinner_dining,
+                                size: 18,
+                                color: AppColors.accent,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text("Dinner"),
+                            ],
+                          ),
+                        ),
+                      ],
+                      onChanged: (value) =>
+                          setState(() => _selectedMealType = value),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Ingredients Field
+                    TextField(
+                      controller: _ingredientsController,
+                      maxLines: 5,
+                      decoration: InputDecoration(
+                        prefixIcon: Padding(
+                          padding: const EdgeInsets.only(bottom: 60),
+                          child: Icon(Icons.list_alt, color: AppColors.primary),
+                        ),
+                        labelText: "Ingredients",
+                        labelStyle: TextStyle(
+                          color: AppColors.dark.withOpacity(0.6),
+                        ),
+                        hintText: "e.g., 2 cups flour, 1 egg, 1 tsp salt...",
+                        hintStyle: TextStyle(
+                          color: AppColors.dark.withOpacity(0.3),
+                        ),
+                        filled: true,
+                        fillColor: AppColors.light,
+                        alignLabelWithHint: true,
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: AppColors.primary.withOpacity(0.3),
+                            width: 2,
+                          ),
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: AppColors.primary,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Instructions Field
+                    TextField(
+                      controller: _instructionsController,
+                      maxLines: 7,
+                      decoration: InputDecoration(
+                        prefixIcon: Padding(
+                          padding: const EdgeInsets.only(bottom: 100),
+                          child: Icon(
+                            Icons.menu_book,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        labelText: "Instructions",
+                        labelStyle: TextStyle(
+                          color: AppColors.dark.withOpacity(0.6),
+                        ),
+                        hintText: "Step-by-step cooking instructions...",
+                        hintStyle: TextStyle(
+                          color: AppColors.dark.withOpacity(0.3),
+                        ),
+                        filled: true,
+                        fillColor: AppColors.light,
+                        alignLabelWithHint: true,
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: AppColors.primary.withOpacity(0.3),
+                            width: 2,
+                          ),
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: AppColors.primary,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Info Card
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: AppColors.primary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              "Sharing this recipe makes it discoverable by all FoodBook users.",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.dark.withOpacity(0.7),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
           ),
         ),
       ),

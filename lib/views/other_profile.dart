@@ -3,6 +3,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'follow_list.dart';
 
+// 🎨 Color Palette - Food themed (consistent across app)
+class AppColors {
+  static const primary = Color(0xFFFF6B35); // Warm Orange
+  static const secondary = Color(0xFFFFBE0B); // Golden Yellow
+  static const accent = Color(0xFFFB5607); // Vibrant Red-Orange
+  static const dark = Color(0xFF2D3142); // Dark Blue-Gray
+  static const light = Color(0xFFFFFBF0); // Cream White
+  static const success = Color(0xFF06A77D); // Fresh Green
+}
+
 class OtherUserProfilePage extends StatefulWidget {
   final String userId;
   final String displayName;
@@ -21,7 +31,6 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
   int _followersCount = 0;
   int _followingCount = 0;
   Stream<QuerySnapshot> _userRecipes() {
-    // Use a simple query to avoid requiring a composite index; we'll sort client-side.
     return FirebaseFirestore.instance
         .collection('recipes')
         .where('userId', isEqualTo: widget.userId)
@@ -58,7 +67,6 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
       });
     }
 
-    // Listen to the viewed user's followers/following counts
     FirebaseFirestore.instance
         .collection('users')
         .doc(widget.userId)
@@ -169,8 +177,12 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
       SnackBar(
         duration: const Duration(seconds: 3),
         content: const Text('Post hidden'),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         action: SnackBarAction(
           label: 'Undo',
+          textColor: Colors.white,
           onPressed: () async {
             setState(() => _hiddenRecipeIds.remove(recipeId));
             await FirebaseFirestore.instance.collection('users').doc(uid).set({
@@ -194,8 +206,12 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
       SnackBar(
         duration: const Duration(seconds: 3),
         content: const Text('User hidden'),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         action: SnackBarAction(
           label: 'Undo',
+          textColor: Colors.white,
           onPressed: () async {
             await FirebaseFirestore.instance.collection('users').doc(uid).set({
               'hiddenUserIds': FieldValue.arrayRemove([widget.userId]),
@@ -283,7 +299,7 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Save'),
+            child: Text('Save', style: TextStyle(color: AppColors.primary)),
           ),
         ],
       ),
@@ -327,7 +343,7 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) {
         return StatefulBuilder(
@@ -345,30 +361,60 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                   Container(
                     width: 40,
                     height: 4,
-                    margin: const EdgeInsets.only(bottom: 8),
+                    margin: const EdgeInsets.only(bottom: 12),
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
+                      color: AppColors.primary.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  const Text(
-                    'Comments',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  Row(
+                    children: [
+                      Icon(Icons.comment, color: AppColors.primary, size: 22),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Comments',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          color: AppColors.dark,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   SizedBox(
                     height: 360,
                     child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                       stream: _commentsStream(recipeId),
                       builder: (context, snapshot) {
                         if (!snapshot.hasData) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
+                          return Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.primary,
+                            ),
                           );
                         }
                         final docs = snapshot.data!.docs;
                         if (docs.isEmpty) {
-                          return const Center(child: Text('No comments yet'));
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.comment_outlined,
+                                  size: 60,
+                                  color: AppColors.primary.withOpacity(0.3),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'No comments yet',
+                                  style: TextStyle(
+                                    color: AppColors.dark.withOpacity(0.5),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
                         }
                         final parents =
                             <QueryDocumentSnapshot<Map<String, dynamic>>>[];
@@ -388,7 +434,10 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                         }
                         return ListView.separated(
                           itemCount: parents.length,
-                          separatorBuilder: (_, __) => const Divider(height: 1),
+                          separatorBuilder: (_, __) => Divider(
+                            height: 1,
+                            color: AppColors.primary.withOpacity(0.1),
+                          ),
                           itemBuilder: (context, index) {
                             final parentDoc = parents[index];
                             final c = parentDoc.data();
@@ -403,73 +452,109 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 ListTile(
-                                  leading: const CircleAvatar(
-                                    child: Icon(Icons.person),
+                                  leading: CircleAvatar(
+                                    backgroundColor: AppColors.primary
+                                        .withOpacity(0.2),
+                                    child: Icon(
+                                      Icons.person,
+                                      color: AppColors.primary,
+                                    ),
                                   ),
-                                  title: Text(c['displayName'] ?? 'User'),
+                                  title: Text(
+                                    c['displayName'] ?? 'User',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.dark,
+                                    ),
+                                  ),
                                   subtitle: Text(c['text'] ?? ''),
-                                  trailing: PopupMenuButton<String>(
-                                    onSelected: (val) async {
-                                      if (val == 'edit' && isMine) {
-                                        await _editComment(
-                                          recipeId,
-                                          commentId,
-                                          c['text'] ?? '',
-                                        );
-                                      } else if (val == 'delete' && isMine) {
-                                        final ok = await showDialog<bool>(
-                                          context: context,
-                                          builder: (context) => AlertDialog(
-                                            title: const Text(
-                                              'Delete comment?',
-                                            ),
-                                            content: const Text(
-                                              'This will remove the comment and its replies.',
-                                            ),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () => Navigator.pop(
-                                                  context,
-                                                  false,
-                                                ),
-                                                child: const Text('Cancel'),
-                                              ),
-                                              TextButton(
-                                                onPressed: () => Navigator.pop(
-                                                  context,
-                                                  true,
-                                                ),
-                                                child: const Text(
-                                                  'Delete',
-                                                  style: TextStyle(
-                                                    color: Colors.red,
+                                  trailing: isMine
+                                      ? PopupMenuButton<String>(
+                                          onSelected: (val) async {
+                                            if (val == 'edit') {
+                                              await _editComment(
+                                                recipeId,
+                                                commentId,
+                                                c['text'] ?? '',
+                                              );
+                                            } else if (val == 'delete') {
+                                              final ok = await showDialog<bool>(
+                                                context: context,
+                                                builder: (context) => AlertDialog(
+                                                  title: const Text(
+                                                    'Delete comment?',
                                                   ),
+                                                  content: const Text(
+                                                    'This will remove the comment and its replies.',
+                                                  ),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () =>
+                                                          Navigator.pop(
+                                                            context,
+                                                            false,
+                                                          ),
+                                                      child: const Text(
+                                                        'Cancel',
+                                                      ),
+                                                    ),
+                                                    TextButton(
+                                                      onPressed: () =>
+                                                          Navigator.pop(
+                                                            context,
+                                                            true,
+                                                          ),
+                                                      child: const Text(
+                                                        'Delete',
+                                                        style: TextStyle(
+                                                          color: Colors.red,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                        if (ok == true) {
-                                          await _deleteComment(
-                                            recipeId,
-                                            commentId,
-                                          );
-                                        }
-                                      }
-                                    },
-                                    itemBuilder: (context) => isMine
-                                        ? const [
+                                              );
+                                              if (ok == true) {
+                                                await _deleteComment(
+                                                  recipeId,
+                                                  commentId,
+                                                );
+                                              }
+                                            }
+                                          },
+                                          itemBuilder: (context) => const [
                                             PopupMenuItem(
                                               value: 'edit',
-                                              child: Text('Edit'),
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.edit, size: 18),
+                                                  SizedBox(width: 8),
+                                                  Text('Edit'),
+                                                ],
+                                              ),
                                             ),
                                             PopupMenuItem(
                                               value: 'delete',
-                                              child: Text('Delete'),
+                                              child: Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.delete,
+                                                    size: 18,
+                                                    color: Colors.red,
+                                                  ),
+                                                  SizedBox(width: 8),
+                                                  Text(
+                                                    'Delete',
+                                                    style: TextStyle(
+                                                      color: Colors.red,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                             ),
-                                          ]
-                                        : const [],
-                                  ),
+                                          ],
+                                        )
+                                      : null,
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.only(
@@ -518,11 +603,12 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                                               c['displayName'] ?? 'User';
                                           setBSState(() {});
                                         },
-                                        child: const Text(
+                                        child: Text(
                                           'Reply',
                                           style: TextStyle(
                                             fontSize: 12,
-                                            color: Colors.black54,
+                                            color: AppColors.primary,
+                                            fontWeight: FontWeight.w600,
                                           ),
                                         ),
                                       ),
@@ -549,62 +635,110 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           ListTile(
-                                            leading: const CircleAvatar(
+                                            leading: CircleAvatar(
                                               radius: 14,
+                                              backgroundColor: AppColors
+                                                  .secondary
+                                                  .withOpacity(0.3),
                                               child: Icon(
                                                 Icons.person,
                                                 size: 16,
+                                                color: AppColors.secondary,
                                               ),
                                             ),
                                             title: Text(
                                               r['displayName'] ?? 'User',
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 14,
+                                                fontWeight: FontWeight.w600,
+                                                color: AppColors.dark,
                                               ),
                                             ),
                                             subtitle: Text(r['text'] ?? ''),
-                                            trailing: PopupMenuButton<String>(
-                                              onSelected: (val) async {
-                                                if (val == 'edit' && rIsMine) {
-                                                  await _editComment(
-                                                    recipeId,
-                                                    rDoc.id,
-                                                    r['text'] ?? '',
-                                                  );
-                                                } else if (val == 'delete' &&
-                                                    rIsMine) {
-                                                  await FirebaseFirestore
-                                                      .instance
-                                                      .collection('recipes')
-                                                      .doc(recipeId)
-                                                      .collection('comments')
-                                                      .doc(rDoc.id)
-                                                      .delete();
-                                                  await FirebaseFirestore
-                                                      .instance
-                                                      .collection('recipes')
-                                                      .doc(recipeId)
-                                                      .set({
-                                                        'commentsCount':
-                                                            FieldValue.increment(
-                                                              -1,
+                                            trailing: rIsMine
+                                                ? PopupMenuButton<String>(
+                                                    onSelected: (val) async {
+                                                      if (val == 'edit') {
+                                                        await _editComment(
+                                                          recipeId,
+                                                          rDoc.id,
+                                                          r['text'] ?? '',
+                                                        );
+                                                      } else if (val ==
+                                                          'delete') {
+                                                        await FirebaseFirestore
+                                                            .instance
+                                                            .collection(
+                                                              'recipes',
+                                                            )
+                                                            .doc(recipeId)
+                                                            .collection(
+                                                              'comments',
+                                                            )
+                                                            .doc(rDoc.id)
+                                                            .delete();
+                                                        await FirebaseFirestore
+                                                            .instance
+                                                            .collection(
+                                                              'recipes',
+                                                            )
+                                                            .doc(recipeId)
+                                                            .set(
+                                                              {
+                                                                'commentsCount':
+                                                                    FieldValue.increment(
+                                                                      -1,
+                                                                    ),
+                                                              },
+                                                              SetOptions(
+                                                                merge: true,
+                                                              ),
+                                                            );
+                                                      }
+                                                    },
+                                                    itemBuilder: (context) =>
+                                                        const [
+                                                          PopupMenuItem(
+                                                            value: 'edit',
+                                                            child: Row(
+                                                              children: [
+                                                                Icon(
+                                                                  Icons.edit,
+                                                                  size: 16,
+                                                                ),
+                                                                SizedBox(
+                                                                  width: 6,
+                                                                ),
+                                                                Text('Edit'),
+                                                              ],
                                                             ),
-                                                      }, SetOptions(merge: true));
-                                                }
-                                              },
-                                              itemBuilder: (context) => rIsMine
-                                                  ? const [
-                                                      PopupMenuItem(
-                                                        value: 'edit',
-                                                        child: Text('Edit'),
-                                                      ),
-                                                      PopupMenuItem(
-                                                        value: 'delete',
-                                                        child: Text('Delete'),
-                                                      ),
-                                                    ]
-                                                  : const [],
-                                            ),
+                                                          ),
+                                                          PopupMenuItem(
+                                                            value: 'delete',
+                                                            child: Row(
+                                                              children: [
+                                                                Icon(
+                                                                  Icons.delete,
+                                                                  size: 16,
+                                                                  color: Colors
+                                                                      .red,
+                                                                ),
+                                                                SizedBox(
+                                                                  width: 6,
+                                                                ),
+                                                                Text(
+                                                                  'Delete',
+                                                                  style: TextStyle(
+                                                                    color: Colors
+                                                                        .red,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ],
+                                                  )
+                                                : null,
                                           ),
                                           Padding(
                                             padding: const EdgeInsets.only(
@@ -660,20 +794,29 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 6,
+                        horizontal: 12,
+                        vertical: 8,
                       ),
                       margin: const EdgeInsets.only(bottom: 8),
                       decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        borderRadius: BorderRadius.circular(6),
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.3),
+                        ),
                       ),
                       child: Row(
                         children: [
+                          Icon(Icons.reply, size: 16, color: AppColors.primary),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'Replying to ${replyingToName ?? ''}',
-                              style: const TextStyle(fontSize: 12),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.dark,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                           GestureDetector(
@@ -682,7 +825,11 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                               replyingToName = null;
                               setBSState(() {});
                             },
-                            child: const Icon(Icons.close, size: 16),
+                            child: Icon(
+                              Icons.close,
+                              size: 18,
+                              color: AppColors.primary,
+                            ),
                           ),
                         ],
                       ),
@@ -692,16 +839,38 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                       Expanded(
                         child: TextField(
                           controller: controller,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             hintText: 'Add a comment...',
-                            border: OutlineInputBorder(),
+                            hintStyle: TextStyle(
+                              color: AppColors.dark.withOpacity(0.4),
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: AppColors.primary,
+                                width: 2,
+                              ),
+                            ),
+                            filled: true,
+                            fillColor: AppColors.light,
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD72638),
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         onPressed: () async {
                           if (controller.text.trim().isEmpty) return;
@@ -715,10 +884,7 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                           replyingToName = null;
                           setBSState(() {});
                         },
-                        child: const Text(
-                          'Post',
-                          style: TextStyle(color: Color(0xFFFAFAFA)),
-                        ),
+                        child: const Icon(Icons.send, size: 18),
                       ),
                     ],
                   ),
@@ -736,26 +902,81 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
   Widget build(BuildContext context) {
     final isMe = FirebaseAuth.instance.currentUser?.uid == widget.userId;
     return Scaffold(
+      backgroundColor: AppColors.light,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFD72638),
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.primary, AppColors.accent],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         title: Text(
           widget.displayName,
-          style: const TextStyle(color: Color(0xFFFAFAFA)),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        iconTheme: const IconThemeData(color: Color(0xFFFAFAFA)),
+        leading: IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
-      backgroundColor: const Color(0xFFFAFAFA),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Enhanced Profile Header
           Container(
             width: double.infinity,
-            color: Colors.white,
-            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(20),
             child: Row(
               children: [
-                const CircleAvatar(radius: 24, child: Icon(Icons.person)),
-                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppColors.primary, AppColors.accent],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: CircleAvatar(
+                    radius: 32,
+                    backgroundColor: Colors.white,
+                    child: Icon(
+                      Icons.person,
+                      size: 36,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -764,12 +985,13 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                         widget.displayName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 18,
+                        style: TextStyle(
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
+                          color: AppColors.dark,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
                           Flexible(
@@ -786,30 +1008,42 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                                   ),
                                 );
                               },
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.groups,
-                                    size: 16,
-                                    color: Colors.black54,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      '$_followersCount followers',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        color: Colors.black54,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.groups,
+                                      size: 16,
+                                      color: AppColors.primary,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                      child: Text(
+                                        '$_followersCount',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.primary,
+                                          fontSize: 13,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 8),
                           Flexible(
                             child: GestureDetector(
                               onTap: () {
@@ -824,26 +1058,38 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                                   ),
                                 );
                               },
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.person_add_alt_1,
-                                    size: 16,
-                                    color: Colors.black54,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      '$_followingCount following',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        color: Colors.black54,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.secondary.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.person_add_alt_1,
+                                      size: 16,
+                                      color: AppColors.secondary,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                      child: Text(
+                                        '$_followingCount',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.secondary,
+                                          fontSize: 13,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -852,17 +1098,40 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                     ],
                   ),
                 ),
+                if (!isMe) const SizedBox(width: 12),
                 if (!isMe)
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _isFollowing
-                          ? Colors.grey[700]
-                          : const Color(0xFFD72638),
+                          ? AppColors.dark
+                          : AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
                     ),
                     onPressed: _toggleFollow,
-                    child: Text(
-                      _isFollowing ? 'Following' : 'Follow',
-                      style: const TextStyle(color: Color(0xFFFAFAFA)),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _isFollowing ? Icons.check : Icons.person_add,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          _isFollowing ? 'Following' : 'Follow',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
               ],
@@ -874,10 +1143,40 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
               stream: _userRecipes(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  );
                 }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(child: Text('No posts yet'));
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.receipt_long_outlined,
+                          size: 100,
+                          color: AppColors.primary.withOpacity(0.3),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'No posts yet',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.dark,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'This user hasn\'t shared any recipes',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.dark.withOpacity(0.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
                 }
                 final docs =
                     snapshot.data!.docs
@@ -894,6 +1193,7 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                         return 0;
                       });
                 return ListView.builder(
+                  padding: const EdgeInsets.all(16),
                   itemCount: docs.length,
                   itemBuilder: (context, index) {
                     final data = docs[index].data() as Map<String, dynamic>;
@@ -911,48 +1211,90 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                         ? (data['commentsCount'] as int)
                         : 0;
                     final recipeId = docs[index].id;
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
+
+                    // Get meal type icon and color
+                    IconData mealIcon;
+                    Color mealColor;
+                    switch (mealType) {
+                      case 'Breakfast':
+                        mealIcon = Icons.wb_sunny;
+                        mealColor = AppColors.secondary;
+                        break;
+                      case 'Lunch':
+                        mealIcon = Icons.lunch_dining;
+                        mealColor = AppColors.primary;
+                        break;
+                      case 'Dinner':
+                        mealIcon = Icons.dinner_dining;
+                        mealColor = AppColors.accent;
+                        break;
+                      default:
+                        mealIcon = Icons.fastfood;
+                        mealColor = AppColors.primary;
+                    }
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Post Header
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
                               children: [
-                                const CircleAvatar(
-                                  radius: 20,
-                                  backgroundColor: Color(0xFF1C1C1C),
-                                  child: Icon(
-                                    Icons.person,
-                                    color: Colors.white,
+                                Container(
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        AppColors.primary,
+                                        AppColors.accent,
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: CircleAvatar(
+                                    radius: 18,
+                                    backgroundColor: Colors.white,
+                                    child: Icon(
+                                      Icons.person,
+                                      size: 20,
+                                      color: AppColors.primary,
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(width: 10),
+                                const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
                                     widget.displayName,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
                                       fontSize: 15,
-                                      color: Colors.black87,
+                                      color: AppColors.dark,
                                     ),
                                   ),
                                 ),
                                 PopupMenuButton<String>(
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Icons.more_vert,
-                                    color: Colors.black54,
+                                    color: AppColors.dark.withOpacity(0.6),
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
                                   onSelected: (value) async {
                                     final isMe =
@@ -995,23 +1337,39 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                                               .doc(recipeId)
                                               .delete();
                                           if (!mounted) return;
-                                          // ignore: use_build_context_synchronously
                                           ScaffoldMessenger.of(
                                             context,
                                           ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('Post deleted'),
+                                            SnackBar(
+                                              content: const Text(
+                                                'Post deleted',
+                                              ),
+                                              backgroundColor:
+                                                  AppColors.success,
+                                              behavior:
+                                                  SnackBarBehavior.floating,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                              ),
                                             ),
                                           );
                                         } catch (e) {
                                           if (!mounted) return;
-                                          // ignore: use_build_context_synchronously
                                           ScaffoldMessenger.of(
                                             context,
                                           ).showSnackBar(
                                             SnackBar(
                                               content: Text(
                                                 'Failed to delete: $e',
+                                              ),
+                                              backgroundColor:
+                                                  Colors.red.shade400,
+                                              behavior:
+                                                  SnackBarBehavior.floating,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
                                               ),
                                             ),
                                           );
@@ -1034,26 +1392,52 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                                       return const [
                                         PopupMenuItem(
                                           value: 'delete',
-                                          child: ListTile(
-                                            leading: Icon(Icons.delete),
-                                            title: Text('Remove'),
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.delete,
+                                                color: Colors.red,
+                                                size: 20,
+                                              ),
+                                              SizedBox(width: 12),
+                                              Text(
+                                                'Remove',
+                                                style: TextStyle(
+                                                  color: Colors.red,
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ];
                                     }
-                                    return const [
+                                    return [
                                       PopupMenuItem(
                                         value: 'hide_user',
-                                        child: ListTile(
-                                          leading: Icon(Icons.no_accounts),
-                                          title: Text('Hide User'),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.no_accounts,
+                                              color: AppColors.dark,
+                                              size: 20,
+                                            ),
+                                            const SizedBox(width: 12),
+                                            const Text('Hide User'),
+                                          ],
                                         ),
                                       ),
                                       PopupMenuItem(
                                         value: 'hide',
-                                        child: ListTile(
-                                          leading: Icon(Icons.visibility_off),
-                                          title: Text('Hide Post'),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.visibility_off,
+                                              color: AppColors.dark,
+                                              size: 20,
+                                            ),
+                                            const SizedBox(width: 12),
+                                            const Text('Hide Post'),
+                                          ],
                                         ),
                                       ),
                                     ];
@@ -1061,112 +1445,265 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 12),
-                            Text(
-                              title,
-                              style: const TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w600,
+                          ),
+
+                          // Recipe Content with gradient header
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  mealColor.withOpacity(0.1),
+                                  mealColor.withOpacity(0.05),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
                               ),
                             ),
-                            Text(
-                              mealType,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.black54,
-                              ),
-                            ),
-                            // Removed inline chips for like/comment counts to match dashboard
-                            if (ingredients.isNotEmpty) ...[
-                              const SizedBox(height: 8),
-                              const Text(
-                                'Ingredients:',
-                                style: TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                              Text(ingredients),
-                            ],
-                            if (instructions.isNotEmpty) ...[
-                              const SizedBox(height: 6),
-                              const Text(
-                                'Instructions:',
-                                style: TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                              Text(instructions),
-                            ],
-                            const Divider(thickness: 1),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                InkWell(
-                                  onTap: () => _toggleLike(recipeId, likes),
-                                  child: Row(
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: mealColor.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Icon(
+                                        mealIcon,
+                                        color: mealColor,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            title,
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.dark,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            mealType,
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: mealColor,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Ingredients & Instructions
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (ingredients.isNotEmpty) ...[
+                                  Row(
                                     children: [
                                       Icon(
-                                        likes.containsKey(
-                                              FirebaseAuth
-                                                      .instance
-                                                      .currentUser
-                                                      ?.uid ??
-                                                  '',
-                                            )
-                                            ? Icons.favorite
-                                            : Icons.favorite_border,
-                                        color: Colors.red,
-                                        size: 20,
+                                        Icons.list_alt,
+                                        size: 18,
+                                        color: AppColors.primary,
                                       ),
-                                      const SizedBox(width: 4),
-                                      Text('${likes.length}'),
-                                    ],
-                                  ),
-                                ),
-                                InkWell(
-                                  onTap: () => _showCommentsBottomSheet(
-                                    context,
-                                    recipeId,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.comment_outlined,
-                                        size: 20,
-                                        color: Colors.black54,
-                                      ),
-                                      const SizedBox(width: 4),
+                                      const SizedBox(width: 8),
                                       Text(
-                                        '$commentsCount',
-                                        style: const TextStyle(
-                                          color: Colors.black54,
+                                        'Ingredients',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.dark,
                                         ),
                                       ),
                                     ],
                                   ),
-                                ),
-                                InkWell(
-                                  onTap: () => _toggleSave(recipeId, saves),
-                                  child: Row(
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.light,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: AppColors.primary.withOpacity(
+                                          0.1,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      ingredients,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: AppColors.dark.withOpacity(0.8),
+                                        height: 1.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                                if (instructions.isNotEmpty) ...[
+                                  const SizedBox(height: 12),
+                                  Row(
                                     children: [
                                       Icon(
-                                        saves.containsKey(
-                                              FirebaseAuth
-                                                      .instance
-                                                      .currentUser
-                                                      ?.uid ??
-                                                  '',
-                                            )
-                                            ? Icons.bookmark
-                                            : Icons.bookmark_border,
-                                        color: Colors.black87,
-                                        size: 20,
+                                        Icons.menu_book,
+                                        size: 18,
+                                        color: AppColors.primary,
                                       ),
-                                      const SizedBox(width: 4),
-                                      Text('${saves.length}'),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Instructions',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.dark,
+                                        ),
+                                      ),
                                     ],
                                   ),
-                                ),
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.light,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: AppColors.primary.withOpacity(
+                                          0.1,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      instructions,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: AppColors.dark.withOpacity(0.8),
+                                        height: 1.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
-                          ],
-                        ),
+                          ),
+
+                          // Action Buttons
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: AppColors.light,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                children: [
+                                  InkWell(
+                                    onTap: () => _toggleLike(recipeId, likes),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          likes.containsKey(
+                                                FirebaseAuth
+                                                        .instance
+                                                        .currentUser
+                                                        ?.uid ??
+                                                    '',
+                                              )
+                                              ? Icons.favorite
+                                              : Icons.favorite_border,
+                                          color: Colors.red,
+                                          size: 22,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          '${likes.length}',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  InkWell(
+                                    onTap: () => _showCommentsBottomSheet(
+                                      context,
+                                      recipeId,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.comment_outlined,
+                                          size: 22,
+                                          color: AppColors.dark.withOpacity(
+                                            0.7,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          '$commentsCount',
+                                          style: TextStyle(
+                                            color: AppColors.dark.withOpacity(
+                                              0.7,
+                                            ),
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  InkWell(
+                                    onTap: () => _toggleSave(recipeId, saves),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          saves.containsKey(
+                                                FirebaseAuth
+                                                        .instance
+                                                        .currentUser
+                                                        ?.uid ??
+                                                    '',
+                                              )
+                                              ? Icons.bookmark
+                                              : Icons.bookmark_border,
+                                          color: AppColors.secondary,
+                                          size: 22,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          '${saves.length}',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   },

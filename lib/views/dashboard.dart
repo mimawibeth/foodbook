@@ -8,6 +8,16 @@ import 'favorites.dart';
 import 'profile.dart';
 import 'other_profile.dart';
 
+// 🎨 Color Palette - Food themed (same as register.dart)
+class AppColors {
+  static const primary = Color(0xFFFF6B35); // Warm Orange
+  static const secondary = Color(0xFFFFBE0B); // Golden Yellow
+  static const accent = Color(0xFFFB5607); // Vibrant Red-Orange
+  static const dark = Color(0xFF2D3142); // Dark Blue-Gray
+  static const light = Color(0xFFFFFBF0); // Cream White
+  static const success = Color(0xFF06A77D); // Fresh Green
+}
+
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
 
@@ -32,21 +42,25 @@ class _DashboardState extends State<Dashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.light,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: const Color(0xFFD72638),
+        backgroundColor: AppColors.primary,
+        elevation: 2,
         title: const Text(
           'FoodBook',
           style: TextStyle(
-            color: Color(0xFFFAFAFA),
+            color: AppColors.light,
             fontWeight: FontWeight.bold,
+            fontSize: 24,
           ),
         ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
+          Container(
+            margin: const EdgeInsets.only(right: 16.0),
+
             child: IconButton(
-              icon: const Icon(Icons.search, color: Color(0xFFFAFAFA)),
+              icon: Icon(Icons.search, color: AppColors.light),
               onPressed: () async {
                 await showSearch(
                   context: context,
@@ -58,28 +72,39 @@ class _DashboardState extends State<Dashboard> {
         ],
       ),
       body: _pages[_selectedIndex],
-      backgroundColor: const Color(0xFFFAFAFA),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        selectedItemColor: const Color(0xFFD72638),
-        unselectedItemColor: const Color(0xFF1C1C1C),
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.restaurant),
-            label: 'Discover',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.menu_book),
-            label: 'My Recipes',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite),
-            label: 'Favorites',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-        ],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.2),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: AppColors.dark.withOpacity(0.6),
+          onTap: _onItemTapped,
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.white,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.restaurant),
+              label: 'Discover',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.menu_book),
+              label: 'My Recipes',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.favorite),
+              label: 'Favorites',
+            ),
+            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          ],
+        ),
       ),
     );
   }
@@ -93,14 +118,17 @@ class RecipeSearchDelegate extends SearchDelegate {
   @override
   List<Widget>? buildActions(BuildContext context) {
     return [
-      IconButton(icon: const Icon(Icons.clear), onPressed: () => query = ''),
+      IconButton(
+        icon: Icon(Icons.clear, color: AppColors.dark),
+        onPressed: () => query = '',
+      ),
     ];
   }
 
   @override
   Widget? buildLeading(BuildContext context) {
     return IconButton(
-      icon: const Icon(Icons.arrow_back),
+      icon: Icon(Icons.arrow_back, color: AppColors.dark),
       onPressed: () => close(context, null),
     );
   }
@@ -113,7 +141,12 @@ class RecipeSearchDelegate extends SearchDelegate {
   @override
   Widget buildSuggestions(BuildContext context) {
     if (query.isEmpty) {
-      return const Center(child: Text('Type to search recipes'));
+      return Center(
+        child: Text(
+          'Type to search recipes',
+          style: TextStyle(color: AppColors.dark.withOpacity(0.6)),
+        ),
+      );
     }
     return _buildRecipeResults(query);
   }
@@ -124,11 +157,18 @@ class RecipeSearchDelegate extends SearchDelegate {
       future: _fetchResults(lowerQuery),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          );
         }
         final results = snapshot.data ?? [];
         if (results.isEmpty) {
-          return const Center(child: Text('No results found'));
+          return Center(
+            child: Text(
+              'No results found',
+              style: TextStyle(color: AppColors.dark.withOpacity(0.6)),
+            ),
+          );
         }
         return ListView.builder(
           itemCount: results.length,
@@ -139,66 +179,74 @@ class RecipeSearchDelegate extends SearchDelegate {
               final mealType = data['mealType'] ?? '';
               final ingredients = data['ingredients'] ?? '';
               final instructions = data['instructions'] ?? '';
-              return ListTile(
-                leading: const Icon(Icons.restaurant_menu),
-                title: Text(recipeTitle),
-                subtitle: Text(mealType),
-                onTap: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: Text(recipeTitle),
-                      content: SingleChildScrollView(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Meal Type: $mealType'),
-                            const SizedBox(height: 8),
-                            Text('Ingredients: $ingredients'),
-                            const SizedBox(height: 8),
-                            Text('Instructions: $instructions'),
-                          ],
+              return Card(
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: ListTile(
+                  leading: Icon(
+                    Icons.restaurant_menu,
+                    color: AppColors.primary,
+                  ),
+                  title: Text(recipeTitle),
+                  subtitle: Text(mealType),
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: Text(recipeTitle),
+                        content: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Meal Type: $mealType'),
+                              const SizedBox(height: 8),
+                              Text('Ingredients: $ingredients'),
+                              const SizedBox(height: 8),
+                              Text('Instructions: $instructions'),
+                            ],
+                          ),
                         ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: Text('Close'),
+                          ),
+                        ],
                       ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Close'),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               );
             } else if (data['type'] == 'user') {
               final displayName = data['displayName'] ?? 'User';
               final email = data['email'] ?? '';
-              final userId = (data['userId'] ?? '').toString();
-              return ListTile(
-                leading: const Icon(Icons.person),
-                title: Text(displayName),
-                subtitle: Text(email),
-                onTap: () {
-                  if (userId.isEmpty) return;
-                  final current = FirebaseAuth.instance.currentUser?.uid;
-                  if (current != null && current == userId) {
-                    // If it's me, switch to Profile tab
-                    Navigator.pop(context);
-                  } else {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => OtherUserProfilePage(
-                          userId: userId,
-                          displayName: displayName,
+              final userId = data['userId'] as String? ?? '';
+              return Card(
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: ListTile(
+                  leading: Icon(Icons.person, color: AppColors.secondary),
+                  title: Text(displayName),
+                  subtitle: Text(email),
+                  onTap: () {
+                    if (userId.isEmpty) return;
+                    final current = FirebaseAuth.instance.currentUser?.uid;
+                    if (current != null && current == userId) {
+                      Navigator.pop(context);
+                    } else {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => OtherUserProfilePage(
+                            userId: userId,
+                            displayName: displayName,
+                          ),
                         ),
-                      ),
-                    );
-                  }
-                },
+                      );
+                    }
+                  },
+                ),
               );
             } else {
-              return const SizedBox.shrink();
+              return SizedBox.shrink();
             }
           },
         );
@@ -268,7 +316,6 @@ class RecipeSearchDelegate extends SearchDelegate {
   }
 }
 
-// ...existing code...
 class DashboardHome extends StatefulWidget {
   const DashboardHome({super.key});
 
@@ -281,10 +328,8 @@ class _DashboardHomeState extends State<DashboardHome>
   late TabController _tabController;
   final List<String> _mealTypes = ["All", "Breakfast", "Lunch", "Dinner"];
   String _selectedMealType = "All";
-  // Holds IDs of posts the current user chose to hide (persisted via listener)
   final Set<String> _hiddenRecipeIds = <String>{};
   final Set<String> _hiddenUserIds = <String>{};
-  // Holds IDs of users the current user follows (persisted)
   final Set<String> _followingIds = <String>{};
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _userDocSub;
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _hiddenSub;
@@ -297,7 +342,6 @@ class _DashboardHomeState extends State<DashboardHome>
       setState(() => _selectedMealType = _mealTypes[_tabController.index]);
     });
 
-    // Listen for current user's follow/hidden settings
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       _userDocSub = FirebaseFirestore.instance
@@ -329,7 +373,6 @@ class _DashboardHomeState extends State<DashboardHome>
           });
     }
 
-    // Listen to the user's hidden recipes to persist hide across sessions
     if (user != null) {
       _hiddenSub = FirebaseFirestore.instance
           .collection('users')
@@ -431,16 +474,16 @@ class _DashboardHomeState extends State<DashboardHome>
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Edit comment'),
+        title: Text('Edit comment'),
         content: TextField(controller: controller, maxLines: 3),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Save'),
+            child: Text('Save'),
           ),
         ],
       ),
@@ -458,7 +501,6 @@ class _DashboardHomeState extends State<DashboardHome>
   Future<void> _deleteComment(String recipeId, String commentId) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
-    // delete the comment and its replies, then decrement commentsCount accordingly
     final commentsCol = FirebaseFirestore.instance
         .collection('recipes')
         .doc(recipeId)
@@ -486,7 +528,7 @@ class _DashboardHomeState extends State<DashboardHome>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (_) {
@@ -505,32 +547,29 @@ class _DashboardHomeState extends State<DashboardHome>
                   Container(
                     width: 40,
                     height: 4,
-                    margin: const EdgeInsets.only(bottom: 8),
+                    margin: EdgeInsets.only(bottom: 8),
                     decoration: BoxDecoration(
                       color: Colors.grey[300],
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  const Text(
+                  Text(
                     'Comments',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   SizedBox(
                     height: 360,
                     child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                       stream: _commentsStream(recipeId),
                       builder: (context, snapshot) {
                         if (!snapshot.hasData) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
+                          return Center(child: CircularProgressIndicator());
                         }
                         final docs = snapshot.data!.docs;
                         if (docs.isEmpty) {
-                          return const Center(child: Text('No comments yet'));
+                          return Center(child: Text('No comments yet'));
                         }
-                        // split into parents and replies
                         final parents =
                             <QueryDocumentSnapshot<Map<String, dynamic>>>[];
                         final repliesByParent =
@@ -549,7 +588,7 @@ class _DashboardHomeState extends State<DashboardHome>
                         }
                         return ListView.separated(
                           itemCount: parents.length,
-                          separatorBuilder: (_, __) => const Divider(height: 1),
+                          separatorBuilder: (_, __) => Divider(height: 1),
                           itemBuilder: (context, index) {
                             final parentDoc = parents[index];
                             final c = parentDoc.data();
@@ -564,7 +603,7 @@ class _DashboardHomeState extends State<DashboardHome>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 ListTile(
-                                  leading: const CircleAvatar(
+                                  leading: CircleAvatar(
                                     child: Icon(Icons.person),
                                   ),
                                   title: Text(c['displayName'] ?? 'User'),
@@ -581,10 +620,8 @@ class _DashboardHomeState extends State<DashboardHome>
                                         final ok = await showDialog<bool>(
                                           context: context,
                                           builder: (context) => AlertDialog(
-                                            title: const Text(
-                                              'Delete comment?',
-                                            ),
-                                            content: const Text(
+                                            title: Text('Delete comment?'),
+                                            content: Text(
                                               'This will remove the comment and its replies.',
                                             ),
                                             actions: [
@@ -593,14 +630,14 @@ class _DashboardHomeState extends State<DashboardHome>
                                                   context,
                                                   false,
                                                 ),
-                                                child: const Text('Cancel'),
+                                                child: Text('Cancel'),
                                               ),
                                               TextButton(
                                                 onPressed: () => Navigator.pop(
                                                   context,
                                                   true,
                                                 ),
-                                                child: const Text(
+                                                child: Text(
                                                   'Delete',
                                                   style: TextStyle(
                                                     color: Colors.red,
@@ -619,7 +656,7 @@ class _DashboardHomeState extends State<DashboardHome>
                                       }
                                     },
                                     itemBuilder: (context) => isMine
-                                        ? const [
+                                        ? [
                                             PopupMenuItem(
                                               value: 'edit',
                                               child: Text('Edit'),
@@ -629,11 +666,11 @@ class _DashboardHomeState extends State<DashboardHome>
                                               child: Text('Delete'),
                                             ),
                                           ]
-                                        : const [],
+                                        : [],
                                   ),
                                 ),
                                 Padding(
-                                  padding: const EdgeInsets.only(
+                                  padding: EdgeInsets.only(
                                     left: 72,
                                     right: 12,
                                     bottom: 8,
@@ -661,17 +698,15 @@ class _DashboardHomeState extends State<DashboardHome>
                                               size: 16,
                                               color: Colors.red,
                                             ),
-                                            const SizedBox(width: 4),
+                                            SizedBox(width: 4),
                                             Text(
                                               '${likes.length}',
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                              ),
+                                              style: TextStyle(fontSize: 12),
                                             ),
                                           ],
                                         ),
                                       ),
-                                      const SizedBox(width: 16),
+                                      SizedBox(width: 16),
                                       InkWell(
                                         onTap: () {
                                           replyingToId = commentId;
@@ -679,7 +714,7 @@ class _DashboardHomeState extends State<DashboardHome>
                                               c['displayName'] ?? 'User';
                                           setBSState(() {});
                                         },
-                                        child: const Text(
+                                        child: Text(
                                           'Reply',
                                           style: TextStyle(
                                             fontSize: 12,
@@ -690,7 +725,6 @@ class _DashboardHomeState extends State<DashboardHome>
                                     ],
                                   ),
                                 ),
-                                // Replies
                                 ...List.generate(
                                   (repliesByParent[commentId] ?? const [])
                                       .length,
@@ -705,13 +739,13 @@ class _DashboardHomeState extends State<DashboardHome>
                                         r['userId'] ==
                                         FirebaseAuth.instance.currentUser?.uid;
                                     return Padding(
-                                      padding: const EdgeInsets.only(left: 48),
+                                      padding: EdgeInsets.only(left: 48),
                                       child: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
                                           ListTile(
-                                            leading: const CircleAvatar(
+                                            leading: CircleAvatar(
                                               radius: 14,
                                               child: Icon(
                                                 Icons.person,
@@ -720,9 +754,7 @@ class _DashboardHomeState extends State<DashboardHome>
                                             ),
                                             title: Text(
                                               r['displayName'] ?? 'User',
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                              ),
+                                              style: TextStyle(fontSize: 14),
                                             ),
                                             subtitle: Text(r['text'] ?? ''),
                                             trailing: PopupMenuButton<String>(
@@ -755,7 +787,7 @@ class _DashboardHomeState extends State<DashboardHome>
                                                 }
                                               },
                                               itemBuilder: (context) => rIsMine
-                                                  ? const [
+                                                  ? [
                                                       PopupMenuItem(
                                                         value: 'edit',
                                                         child: Text('Edit'),
@@ -765,11 +797,11 @@ class _DashboardHomeState extends State<DashboardHome>
                                                         child: Text('Delete'),
                                                       ),
                                                     ]
-                                                  : const [],
+                                                  : [],
                                             ),
                                           ),
                                           Padding(
-                                            padding: const EdgeInsets.only(
+                                            padding: EdgeInsets.only(
                                               left: 56,
                                               bottom: 8,
                                             ),
@@ -795,10 +827,10 @@ class _DashboardHomeState extends State<DashboardHome>
                                                     size: 14,
                                                     color: Colors.red,
                                                   ),
-                                                  const SizedBox(width: 4),
+                                                  SizedBox(width: 4),
                                                   Text(
                                                     '${rLikes.length}',
-                                                    style: const TextStyle(
+                                                    style: TextStyle(
                                                       fontSize: 12,
                                                     ),
                                                   ),
@@ -821,11 +853,8 @@ class _DashboardHomeState extends State<DashboardHome>
                   if (replyingToId != null)
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 6,
-                      ),
-                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      margin: EdgeInsets.only(bottom: 8),
                       decoration: BoxDecoration(
                         color: Colors.grey[200],
                         borderRadius: BorderRadius.circular(6),
@@ -835,7 +864,7 @@ class _DashboardHomeState extends State<DashboardHome>
                           Expanded(
                             child: Text(
                               'Replying to ${replyingToName ?? ''}',
-                              style: const TextStyle(fontSize: 12),
+                              style: TextStyle(fontSize: 12),
                             ),
                           ),
                           GestureDetector(
@@ -844,7 +873,7 @@ class _DashboardHomeState extends State<DashboardHome>
                               replyingToName = null;
                               setBSState(() {});
                             },
-                            child: const Icon(Icons.close, size: 16),
+                            child: Icon(Icons.close, size: 16),
                           ),
                         ],
                       ),
@@ -854,16 +883,16 @@ class _DashboardHomeState extends State<DashboardHome>
                       Expanded(
                         child: TextField(
                           controller: controller,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             hintText: 'Add a comment...',
                             border: OutlineInputBorder(),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD72638),
+                          backgroundColor: AppColors.primary,
                         ),
                         onPressed: () async {
                           if (controller.text.trim().isEmpty) return;
@@ -877,14 +906,14 @@ class _DashboardHomeState extends State<DashboardHome>
                           replyingToName = null;
                           setBSState(() {});
                         },
-                        child: const Text(
+                        child: Text(
                           'Post',
-                          style: TextStyle(color: Color(0xFFFAFAFA)),
+                          style: TextStyle(color: Colors.white),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                 ],
               ),
             );
@@ -945,572 +974,172 @@ class _DashboardHomeState extends State<DashboardHome>
     await recipeRef.update({'saves': saves});
   }
 
-  // _handlePostMenu removed as the inline PopupMenuButtons are used; keeping the codebase clean.
+  Future<void> _editRecipeDialog(
+    BuildContext context,
+    String recipeId,
+    Map<String, dynamic> data,
+  ) async {
+    final titleController = TextEditingController(text: data['name'] ?? '');
+    final ingredientsController = TextEditingController(
+      text: data['ingredients'] ?? '',
+    );
+    final instructionsController = TextEditingController(
+      text: data['instructions'] ?? '',
+    );
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Post bar
-        GestureDetector(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const CreateRecipePage()),
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            color: Colors.white,
-            child: const Row(
-              children: [
-                Icon(Icons.account_circle, size: 32, color: Color(0xFF1C1C1C)),
-                SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    "Want to share your recipe?",
-                    style: TextStyle(color: Colors.black54),
+          backgroundColor: Colors.white,
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Text(
+                        'Edit Recipe',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                  SizedBox(height: 18),
+                  TextField(
+                    controller: titleController,
+                    decoration: InputDecoration(
+                      labelText: 'Recipe Title',
+                      labelStyle: TextStyle(color: AppColors.primary),
+                      filled: true,
+                      fillColor: AppColors.light,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(
+                          color: AppColors.primary,
+                          width: 2,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 14),
+                  TextField(
+                    controller: ingredientsController,
+                    decoration: InputDecoration(
+                      labelText: 'Ingredients',
+                      labelStyle: TextStyle(color: AppColors.primary),
+                      filled: true,
+                      fillColor: AppColors.light,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(
+                          color: AppColors.primary,
+                          width: 2,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    maxLines: 2,
+                  ),
+                  SizedBox(height: 14),
+                  TextField(
+                    controller: instructionsController,
+                    decoration: InputDecoration(
+                      labelText: 'Instructions',
+                      labelStyle: TextStyle(color: AppColors.primary),
+                      filled: true,
+                      fillColor: AppColors.light,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(
+                          color: AppColors.primary,
+                          width: 2,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    maxLines: 3,
+                  ),
+                  SizedBox(height: 22),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton.icon(
+                        onPressed: () => Navigator.pop(context, false),
+                        icon: Icon(Icons.cancel, color: AppColors.dark),
+                        label: Text(
+                          'Cancel',
+                          style: TextStyle(
+                            color: AppColors.dark,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                        ),
+                        onPressed: () => Navigator.pop(context, true),
+                        icon: Icon(Icons.save, color: Colors.white),
+                        label: Text(
+                          'Save',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        Container(
-          height: 2,
-          color: const Color(0xFF1C1C1C),
-          margin: const EdgeInsets.symmetric(vertical: 2),
-        ),
-        Container(
-          color: Colors.white,
-          width: double.infinity, // full width
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              // adjust font size based on available width
-              double fontSize = constraints.maxWidth / (_mealTypes.length * 6);
-              fontSize = fontSize.clamp(12, 16); // min 12, max 16
-
-              return TabBar(
-                controller: _tabController,
-                isScrollable: true,
-                labelColor: const Color(0xFFD72638),
-                unselectedLabelColor: const Color(0xFF1C1C1C),
-                indicatorColor: const Color(0xFFD72638),
-                labelStyle: TextStyle(
-                  fontSize: fontSize,
-                  fontWeight: FontWeight.bold,
-                ),
-                unselectedLabelStyle: TextStyle(fontSize: fontSize),
-                tabs: _mealTypes.map((type) => Tab(text: type)).toList(),
-              );
-            },
-          ),
-        ),
-        Expanded(
-          child: StreamBuilder<QuerySnapshot>(
-            stream: _fetchAllRecipes(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return const Center(child: Text("No recipes found"));
-              }
-
-              final recipes = snapshot.data!.docs
-                  .where((doc) {
-                    if (_selectedMealType == "All") return true;
-                    final data = doc.data() as Map<String, dynamic>;
-                    return data['mealType'] == _selectedMealType;
-                  })
-                  // Exclude posts the user chose to hide in this session
-                  .where((doc) => !_hiddenRecipeIds.contains(doc.id))
-                  // Exclude posts from users the current user has hidden
-                  .where((doc) {
-                    final data = doc.data() as Map<String, dynamic>;
-                    final uid = (data['userId'] ?? '').toString();
-                    return !_hiddenUserIds.contains(uid);
-                  })
-                  .toList();
-
-              if (recipes.isEmpty) {
-                return const Center(child: Text("No recipes found"));
-              }
-
-              return ListView.builder(
-                itemCount: recipes.length,
-                itemBuilder: (context, index) {
-                  final data = recipes[index].data() as Map<String, dynamic>;
-                  final username = (data['postedBy'] ?? "Your Name").toString();
-                  final recipeTitle = data['name'] ?? "No title";
-                  final mealType = data['mealType'] ?? "";
-                  final ingredients = data['ingredients'] ?? "";
-                  final instructions = data['instructions'] ?? "";
-                  final likes = Map<String, dynamic>.from(data['likes'] ?? {});
-                  final saves = Map<String, dynamic>.from(data['saves'] ?? {});
-                  final authorId = (data['userId'] ?? '').toString();
-                  final commentsCount = (data['commentsCount'] is int)
-                      ? (data['commentsCount'] as int)
-                      : 0;
-                  // ownership handled inline where needed; no local var required
-
-                  return Card(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const CircleAvatar(
-                                radius: 20,
-                                backgroundColor: Color(0xFF1C1C1C),
-                                child: Icon(Icons.person, color: Colors.white),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () {
-                                    if (authorId.isNotEmpty &&
-                                        FirebaseAuth
-                                                .instance
-                                                .currentUser
-                                                ?.uid !=
-                                            authorId) {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => OtherUserProfilePage(
-                                            userId: authorId,
-                                            displayName: username.toString(),
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  },
-                                  child: Text(
-                                    username,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 15,
-                                      color: Colors.black87,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ),
-                              // Only show menu if current user is the owner
-                              if (FirebaseAuth.instance.currentUser?.uid ==
-                                  authorId)
-                                PopupMenuButton<String>(
-                                  icon: const Icon(
-                                    Icons.more_vert,
-                                    color: Colors.black54,
-                                  ),
-                                  onSelected: (value) async {
-                                    if (value == 'edit') {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => CreateRecipePage(
-                                            recipeId: recipes[index].id,
-                                            initialData: data,
-                                          ),
-                                        ),
-                                      );
-                                    } else if (value == 'delete') {
-                                      final confirm = await showDialog<bool>(
-                                        context: context,
-                                        builder: (context) => AlertDialog(
-                                          title: const Text('Delete Post'),
-                                          content: const Text(
-                                            'Are you sure you want to delete this post?',
-                                          ),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () =>
-                                                  Navigator.pop(context, false),
-                                              child: const Text('Cancel'),
-                                            ),
-                                            TextButton(
-                                              onPressed: () =>
-                                                  Navigator.pop(context, true),
-                                              child: const Text(
-                                                'Delete',
-                                                style: TextStyle(
-                                                  color: Colors.red,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                      if (confirm == true) {
-                                        try {
-                                          await FirebaseFirestore.instance
-                                              .collection('recipes')
-                                              .doc(recipes[index].id)
-                                              .delete();
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              const SnackBar(
-                                                content: Text('Post deleted'),
-                                              ),
-                                            );
-                                          }
-                                        } catch (e) {
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  'Failed to delete: $e',
-                                                ),
-                                              ),
-                                            );
-                                          }
-                                        }
-                                      }
-                                    }
-                                  },
-                                  itemBuilder: (context) => const [
-                                    PopupMenuItem(
-                                      value: 'edit',
-                                      child: ListTile(
-                                        leading: Icon(Icons.edit),
-                                        title: Text('Edit'),
-                                      ),
-                                    ),
-                                    PopupMenuItem(
-                                      value: 'delete',
-                                      child: ListTile(
-                                        leading: Icon(Icons.delete),
-                                        title: Text('Remove'),
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              else
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    OutlinedButton(
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: const Color(
-                                          0xFFFAFAFA,
-                                        ),
-                                        backgroundColor:
-                                            _followingIds.contains(authorId)
-                                            ? Colors.grey.shade700
-                                            : const Color(0xFFD72638),
-                                        side: BorderSide(
-                                          color:
-                                              _followingIds.contains(authorId)
-                                              ? Colors.grey.shade700
-                                              : const Color(0xFFD72638),
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 6,
-                                        ),
-                                      ),
-                                      onPressed: () => _toggleFollow(authorId),
-                                      child: Text(
-                                        _followingIds.contains(authorId)
-                                            ? 'Following'
-                                            : 'Follow',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Color(0xFFFAFAFA),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    PopupMenuButton<String>(
-                                      icon: const Icon(
-                                        Icons.more_vert,
-                                        color: Colors.black54,
-                                      ),
-                                      onSelected: (value) async {
-                                        if (value == 'view') {
-                                          if (authorId.isNotEmpty) {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (_) =>
-                                                    OtherUserProfilePage(
-                                                      userId: authorId,
-                                                      displayName: username
-                                                          .toString(),
-                                                    ),
-                                              ),
-                                            );
-                                          }
-                                        } else if (value == 'follow') {
-                                          await _toggleFollow(authorId);
-                                        } else if (value == 'unfollow') {
-                                          await _toggleFollow(authorId);
-                                        } else if (value == 'hide_user') {
-                                          await _hideUser(authorId);
-                                        } else if (value == 'hide') {
-                                          final hiddenId = recipes[index].id;
-                                          _hiddenRecipeIds.add(hiddenId);
-                                          setState(() {});
-                                          final messenger =
-                                              ScaffoldMessenger.of(context);
-                                          messenger.hideCurrentSnackBar();
-                                          messenger.showSnackBar(
-                                            SnackBar(
-                                              duration: const Duration(
-                                                seconds: 3,
-                                              ),
-                                              content: const Text(
-                                                'Post hidden',
-                                              ),
-                                              action: SnackBarAction(
-                                                label: 'Undo',
-                                                onPressed: () async {
-                                                  _hiddenRecipeIds.remove(
-                                                    hiddenId,
-                                                  );
-                                                  setState(() {});
-                                                  final uid = FirebaseAuth
-                                                      .instance
-                                                      .currentUser
-                                                      ?.uid;
-                                                  if (uid != null) {
-                                                    await FirebaseFirestore
-                                                        .instance
-                                                        .collection('users')
-                                                        .doc(uid)
-                                                        .set(
-                                                          {
-                                                            'hiddenRecipeIds':
-                                                                FieldValue.arrayRemove(
-                                                                  [hiddenId],
-                                                                ),
-                                                          },
-                                                          SetOptions(
-                                                            merge: true,
-                                                          ),
-                                                        );
-                                                  }
-                                                },
-                                              ),
-                                            ),
-                                          );
-                                          final uid = FirebaseAuth
-                                              .instance
-                                              .currentUser
-                                              ?.uid;
-                                          if (uid != null) {
-                                            await FirebaseFirestore.instance
-                                                .collection('users')
-                                                .doc(uid)
-                                                .set({
-                                                  'hiddenRecipeIds':
-                                                      FieldValue.arrayUnion([
-                                                        hiddenId,
-                                                      ]),
-                                                }, SetOptions(merge: true));
-                                          }
-                                        }
-                                      },
-                                      itemBuilder: (context) {
-                                        final items =
-                                            <PopupMenuEntry<String>>[];
-                                        items.add(
-                                          const PopupMenuItem(
-                                            value: 'view',
-                                            child: ListTile(
-                                              leading: Icon(
-                                                Icons.person_search,
-                                              ),
-                                              title: Text('View Profile'),
-                                            ),
-                                          ),
-                                        );
-                                        if (_followingIds.contains(authorId)) {
-                                          items.add(
-                                            const PopupMenuItem(
-                                              value: 'unfollow',
-                                              child: ListTile(
-                                                leading: Icon(
-                                                  Icons.person_remove,
-                                                ),
-                                                title: Text('Unfollow'),
-                                              ),
-                                            ),
-                                          );
-                                        } else {
-                                          items.add(
-                                            const PopupMenuItem(
-                                              value: 'follow',
-                                              child: ListTile(
-                                                leading: Icon(Icons.person_add),
-                                                title: Text('Follow'),
-                                              ),
-                                            ),
-                                          );
-                                        }
-                                        items.add(
-                                          const PopupMenuItem(
-                                            value: 'hide_user',
-                                            child: ListTile(
-                                              leading: Icon(Icons.no_accounts),
-                                              title: Text('Hide User'),
-                                            ),
-                                          ),
-                                        );
-                                        items.add(
-                                          const PopupMenuItem(
-                                            value: 'hide',
-                                            child: ListTile(
-                                              leading: Icon(
-                                                Icons.visibility_off,
-                                              ),
-                                              title: Text('Hide Post'),
-                                            ),
-                                          ),
-                                        );
-                                        return items;
-                                      },
-                                    ),
-                                  ],
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            recipeTitle,
-                            style: const TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Text(
-                            mealType,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.black54,
-                            ),
-                          ),
-                          // Removed inline chips for like/comment counts under the content
-                          if (ingredients.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            const Text(
-                              "Ingredients:",
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            Text(ingredients),
-                          ],
-                          if (instructions.isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            const Text(
-                              "Instructions:",
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            Text(instructions),
-                          ],
-                          const Divider(thickness: 1),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              InkWell(
-                                onTap: () =>
-                                    toggleLike(recipes[index].id, likes),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      likes.containsKey(
-                                            FirebaseAuth
-                                                    .instance
-                                                    .currentUser
-                                                    ?.uid ??
-                                                "",
-                                          )
-                                          ? Icons.favorite
-                                          : Icons.favorite_border,
-                                      color: Colors.red,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text("${likes.length}"),
-                                  ],
-                                ),
-                              ),
-                              // <-- Fixed: removed `const` from this Row's children so non-const TextStyle won't cause a compile error
-                              InkWell(
-                                onTap: () {
-                                  final recipeId = recipes[index].id;
-                                  _showCommentsBottomSheet(context, recipeId);
-                                },
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.comment_outlined,
-                                      size: 20,
-                                      color: Colors.black54,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '$commentsCount',
-                                      style: const TextStyle(
-                                        color: Colors.black54,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              InkWell(
-                                onTap: () =>
-                                    toggleSave(recipes[index].id, saves),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      saves.containsKey(
-                                            FirebaseAuth
-                                                    .instance
-                                                    .currentUser
-                                                    ?.uid ??
-                                                '',
-                                          )
-                                          ? Icons.bookmark
-                                          : Icons.bookmark_border,
-                                      color: Colors.black87,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text('${saves.length}'),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-        ),
-      ],
+        );
+      },
     );
+
+    if (result == true) {
+      await FirebaseFirestore.instance
+          .collection('recipes')
+          .doc(recipeId)
+          .update({
+            'name': titleController.text.trim(),
+            'ingredients': ingredientsController.text.trim(),
+            'instructions': instructionsController.text.trim(),
+          });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Recipe updated')));
+    }
   }
 
   Future<void> _toggleFollow(String targetUid) async {
@@ -1533,7 +1162,6 @@ class _DashboardHomeState extends State<DashboardHome>
         'followersIds': FieldValue.arrayUnion([uid]),
       }, SetOptions(merge: true));
     }
-    // local update will be reflected by the listener; optional optimistic update:
     setState(() {
       if (isFollowing) {
         _followingIds.remove(targetUid);
@@ -1551,8 +1179,8 @@ class _DashboardHomeState extends State<DashboardHome>
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        duration: const Duration(seconds: 3),
-        content: const Text('User hidden'),
+        duration: Duration(seconds: 3),
+        content: Text('User hidden'),
         action: SnackBarAction(
           label: 'Undo',
           onPressed: () async {
@@ -1568,5 +1196,842 @@ class _DashboardHomeState extends State<DashboardHome>
     await FirebaseFirestore.instance.collection('users').doc(uid).set({
       'hiddenUserIds': FieldValue.arrayUnion([targetUid]),
     }, SetOptions(merge: true));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Enhanced Post bar
+        GestureDetector(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CreateRecipePage()),
+          ),
+          child: Container(
+            padding: EdgeInsets.all(16),
+            margin: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Icon(Icons.person, color: AppColors.primary),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    "Want to share your recipe?",
+                    style: TextStyle(color: AppColors.dark.withOpacity(0.7)),
+                  ),
+                ),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.add, color: Colors.white, size: 16),
+                      SizedBox(width: 4),
+                      Text(
+                        "Post",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Enhanced Tab Bar
+        Container(
+          color: Colors.white,
+          child: TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            labelColor: AppColors.primary,
+            unselectedLabelColor: AppColors.dark,
+            indicatorColor: AppColors.primary,
+            labelStyle: TextStyle(fontWeight: FontWeight.bold),
+            tabs: _mealTypes.map((type) => Tab(text: type)).toList(),
+          ),
+        ),
+
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: _fetchAllRecipes(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                );
+              }
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return Center(
+                  child: Text(
+                    "No recipes found",
+                    style: TextStyle(color: AppColors.dark.withOpacity(0.6)),
+                  ),
+                );
+              }
+
+              final recipes = snapshot.data!.docs
+                  .where((doc) {
+                    if (_selectedMealType == "All") return true;
+                    final data = doc.data() as Map<String, dynamic>;
+                    return data['mealType'] == _selectedMealType;
+                  })
+                  .where((doc) => !_hiddenRecipeIds.contains(doc.id))
+                  .where((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final uid = (data['userId'] ?? '') as String;
+                    return !_hiddenUserIds.contains(uid);
+                  })
+                  .toList();
+
+              if (recipes.isEmpty) {
+                return Center(
+                  child: Text(
+                    "No recipes found",
+                    style: TextStyle(color: AppColors.dark.withOpacity(0.6)),
+                  ),
+                );
+              }
+
+              return ListView.builder(
+                itemCount: recipes.length,
+                itemBuilder: (context, index) {
+                  final data = recipes[index].data() as Map<String, dynamic>;
+                  final username = data['postedBy'] ?? "Your Name";
+                  final recipeTitle = data['name'] ?? "No title";
+                  final mealType = data['mealType'] ?? "";
+                  final ingredients = data['ingredients'] ?? "";
+                  final instructions = data['instructions'] ?? "";
+                  final likes = Map<String, dynamic>.from(data['likes'] ?? {});
+                  final saves = Map<String, dynamic>.from(data['saves'] ?? {});
+                  final authorId = (data['userId'] ?? '') as String;
+                  final commentsCount = (data['commentsCount'] is int)
+                      ? (data['commentsCount'] as int)
+                      : 0;
+
+                  // Get meal type icon and color (matching profile.dart)
+                  IconData mealIcon;
+                  Color mealColor;
+                  switch (mealType) {
+                    case 'Breakfast':
+                      mealIcon = Icons.wb_sunny;
+                      mealColor = AppColors.secondary;
+                      break;
+                    case 'Lunch':
+                      mealIcon = Icons.lunch_dining;
+                      mealColor = AppColors.primary;
+                      break;
+                    case 'Dinner':
+                      mealIcon = Icons.dinner_dining;
+                      mealColor = AppColors.accent;
+                      break;
+                    default:
+                      mealIcon = Icons.fastfood;
+                      mealColor = AppColors.primary;
+                  }
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 15,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Post Header
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppColors.primary,
+                                      AppColors.accent,
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: CircleAvatar(
+                                  radius: 20,
+                                  backgroundColor: Colors.white,
+                                  child: Icon(
+                                    Icons.person,
+                                    size: 22,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    if (authorId.isNotEmpty &&
+                                        FirebaseAuth
+                                                .instance
+                                                .currentUser
+                                                ?.uid !=
+                                            authorId) {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => OtherUserProfilePage(
+                                            userId: authorId,
+                                            displayName: username.toString(),
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        username,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                          color: AppColors.dark,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Recipe Creator',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.dark.withOpacity(
+                                            0.6,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              // Only show menu if current user is the owner
+                              if (FirebaseAuth.instance.currentUser?.uid ==
+                                  authorId)
+                                PopupMenuButton<String>(
+                                  icon: Icon(
+                                    Icons.more_vert,
+                                    color: AppColors.dark.withOpacity(0.6),
+                                  ),
+                                  onSelected: (value) async {
+                                    if (value == 'edit') {
+                                      await _editRecipeDialog(
+                                        context,
+                                        recipes[index].id,
+                                        data,
+                                      );
+                                    } else if (value == 'delete') {
+                                      final confirm = await showDialog<bool>(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: Text(
+                                            'Delete Recipe',
+                                            style: TextStyle(
+                                              color: AppColors.dark,
+                                            ),
+                                          ),
+                                          content: Text(
+                                            'Are you sure you want to delete this recipe?',
+                                            style: TextStyle(
+                                              color: AppColors.dark.withOpacity(
+                                                0.7,
+                                              ),
+                                            ),
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(context, false),
+                                              child: Text(
+                                                'Cancel',
+                                                style: TextStyle(
+                                                  color: AppColors.dark,
+                                                ),
+                                              ),
+                                            ),
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(context, true),
+                                              child: Text(
+                                                'Delete',
+                                                style: TextStyle(
+                                                  color: Colors.red,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                      if (confirm == true) {
+                                        try {
+                                          await FirebaseFirestore.instance
+                                              .collection('recipes')
+                                              .doc(recipes[index].id)
+                                              .delete();
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: const Text(
+                                                  'Recipe deleted',
+                                                ),
+                                                backgroundColor:
+                                                    AppColors.success,
+                                              ),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Failed to delete: $e',
+                                                ),
+                                                backgroundColor: Colors.red,
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  itemBuilder: (context) => [
+                                    PopupMenuItem(
+                                      value: 'edit',
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.edit,
+                                            color: AppColors.primary,
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text('Edit Recipe'),
+                                        ],
+                                      ),
+                                    ),
+                                    PopupMenuItem(
+                                      value: 'delete',
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.delete,
+                                            color: Colors.red,
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text('Delete Recipe'),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              else
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(20),
+                                        gradient:
+                                            _followingIds.contains(authorId)
+                                            ? null
+                                            : LinearGradient(
+                                                colors: [
+                                                  AppColors.primary,
+                                                  AppColors.accent,
+                                                ],
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
+                                              ),
+                                        color: _followingIds.contains(authorId)
+                                            ? AppColors.dark.withOpacity(0.1)
+                                            : null,
+                                      ),
+                                      height: 36, 
+                                      child: ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.transparent,
+                                          shadowColor: Colors.transparent,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 8,
+                                          ),
+                                        ),
+                                        onPressed: () =>
+                                            _toggleFollow(authorId),
+                                        child: Text(
+                                          _followingIds.contains(authorId)
+                                              ? 'Following'
+                                              : 'Follow',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color:
+                                                _followingIds.contains(authorId)
+                                                ? AppColors.dark
+                                                : Colors.white,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    PopupMenuButton<String>(
+                                      icon: Icon(
+                                        Icons.more_vert,
+                                        color: AppColors.dark.withOpacity(0.6),
+                                      ),
+                                      onSelected: (value) async {
+                                        if (value == 'hide') {
+                                          final hiddenId = recipes[index].id;
+                                          _hiddenRecipeIds.add(hiddenId);
+                                          setState(() {});
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: const Text(
+                                                'Post hidden',
+                                              ),
+                                              backgroundColor: AppColors.dark,
+                                              action: SnackBarAction(
+                                                label: 'Undo',
+                                                textColor: AppColors.secondary,
+                                                onPressed: () async {
+                                                  _hiddenRecipeIds.remove(
+                                                    hiddenId,
+                                                  );
+                                                  setState(() {});
+                                                },
+                                              ),
+                                            ),
+                                          );
+                                        } else if (value == 'hide_user') {
+                                          await _hideUser(authorId);
+                                        }
+                                      },
+                                      itemBuilder: (context) => [
+                                        PopupMenuItem(
+                                          value: 'hide',
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.visibility_off,
+                                                color: AppColors.dark,
+                                                size: 18,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text('Hide Post'),
+                                            ],
+                                          ),
+                                        ),
+                                        PopupMenuItem(
+                                          value: 'hide_user',
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.no_accounts,
+                                                color: Colors.red,
+                                                size: 18,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text('Hide User'),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                            ],
+                          ),
+                        ),
+
+                        // Recipe Content with gradient header (matching profile.dart)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                mealColor.withOpacity(0.1),
+                                mealColor.withOpacity(0.05),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(12),
+                              topRight: Radius.circular(12),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: mealColor.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  mealIcon,
+                                  color: mealColor,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      recipeTitle,
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.dark,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: mealColor.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        mealType,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: mealColor,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Ingredients & Instructions (matching profile.dart style)
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (ingredients.isNotEmpty) ...[
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.list_alt,
+                                      color: AppColors.primary,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Ingredients',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: AppColors.dark,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.light,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: AppColors.primary.withOpacity(0.2),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    ingredients,
+                                    style: TextStyle(
+                                      color: AppColors.dark.withOpacity(0.8),
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              if (instructions.isNotEmpty) ...[
+                                const SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.format_list_numbered,
+                                      color: AppColors.primary,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Instructions',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: AppColors.dark,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.light,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: AppColors.primary.withOpacity(0.2),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    instructions,
+                                    style: TextStyle(
+                                      color: AppColors.dark.withOpacity(0.8),
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+
+                        // Action Buttons (matching profile.dart style)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.light,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppColors.primary.withOpacity(0.1),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: () =>
+                                        toggleLike(recipes[index].id, likes),
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            likes.containsKey(
+                                                  FirebaseAuth
+                                                          .instance
+                                                          .currentUser
+                                                          ?.uid ??
+                                                      "",
+                                                )
+                                                ? Icons.favorite
+                                                : Icons.favorite_border,
+                                            color:
+                                                likes.containsKey(
+                                                  FirebaseAuth
+                                                          .instance
+                                                          .currentUser
+                                                          ?.uid ??
+                                                      "",
+                                                )
+                                                ? AppColors.accent
+                                                : AppColors.dark.withOpacity(
+                                                    0.6,
+                                                  ),
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            '${likes.length}',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.dark,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  width: 1,
+                                  height: 40,
+                                  color: AppColors.primary.withOpacity(0.2),
+                                ),
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: () => _showCommentsBottomSheet(
+                                      context,
+                                      recipes[index].id,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.comment_outlined,
+                                            color: AppColors.dark.withOpacity(
+                                              0.6,
+                                            ),
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            '$commentsCount',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.dark,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  width: 1,
+                                  height: 40,
+                                  color: AppColors.primary.withOpacity(0.2),
+                                ),
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: () =>
+                                        toggleSave(recipes[index].id, saves),
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            saves.containsKey(
+                                                  FirebaseAuth
+                                                          .instance
+                                                          .currentUser
+                                                          ?.uid ??
+                                                      '',
+                                                )
+                                                ? Icons.bookmark
+                                                : Icons.bookmark_border,
+                                            color:
+                                                saves.containsKey(
+                                                  FirebaseAuth
+                                                          .instance
+                                                          .currentUser
+                                                          ?.uid ??
+                                                      '',
+                                                )
+                                                ? AppColors.secondary
+                                                : AppColors.dark.withOpacity(
+                                                    0.6,
+                                                  ),
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            '${saves.length}',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.dark,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
   }
 }
