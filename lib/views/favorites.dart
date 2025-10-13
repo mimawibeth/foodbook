@@ -371,6 +371,43 @@ class _FavoritesState extends State<Favorites> {
                       ),
                     ),
 
+                    // Recipe Image (if available)
+                    if (data['imageUrl'] != null &&
+                        data['imageUrl'].toString().isNotEmpty)
+                      ClipRRect(
+                        child: Image.network(
+                          data['imageUrl'].toString(),
+                          width: double.infinity,
+                          height: 200,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              height: 200,
+                              color: AppColors.light,
+                              child: Center(
+                                child: Icon(
+                                  Icons.broken_image,
+                                  size: 50,
+                                  color: AppColors.dark.withOpacity(0.3),
+                                ),
+                              ),
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              height: 200,
+                              color: AppColors.light,
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+
                     // Expanded Content
                     if (isExpanded)
                       Padding(

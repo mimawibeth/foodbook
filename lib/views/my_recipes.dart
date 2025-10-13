@@ -261,6 +261,44 @@ class MyRecipes extends StatelessWidget {
                             ),
                           ),
 
+                          // Recipe Image (if available)
+                          if (recipe['imageUrl'] != null &&
+                              recipe['imageUrl'].toString().isNotEmpty)
+                            ClipRRect(
+                              child: Image.network(
+                                recipe['imageUrl'].toString(),
+                                width: double.infinity,
+                                height: 200,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    height: 200,
+                                    color: AppColors.light,
+                                    child: Center(
+                                      child: Icon(
+                                        Icons.broken_image,
+                                        size: 50,
+                                        color: AppColors.dark.withOpacity(0.3),
+                                      ),
+                                    ),
+                                  );
+                                },
+                                loadingBuilder:
+                                    (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Container(
+                                        height: 200,
+                                        color: AppColors.light,
+                                        child: Center(
+                                          child: CircularProgressIndicator(
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                              ),
+                            ),
+
                           // Content with fixed height containers
                           Padding(
                             padding: const EdgeInsets.all(16),

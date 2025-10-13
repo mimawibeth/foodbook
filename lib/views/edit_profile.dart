@@ -25,16 +25,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _firstController;
   late TextEditingController _lastController;
-  late TextEditingController _displayController;
+  late TextEditingController _bioController;
   bool _saving = false;
   bool _loading = true;
+  String _email = '';
 
   @override
   void initState() {
     super.initState();
     _firstController = TextEditingController();
     _lastController = TextEditingController();
-    _displayController = TextEditingController();
+    _bioController = TextEditingController();
     _loadProfile();
   }
 
@@ -46,7 +47,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final data = doc.data() ?? {};
     _firstController.text = (data['firstName'] ?? '').toString();
     _lastController.text = (data['lastName'] ?? '').toString();
-    _displayController.text = (data['displayName'] ?? '').toString();
+    _bioController.text = (data['bio'] ?? '').toString();
+
+    // Get email from Firebase Auth
+    final user = FirebaseAuth.instance.currentUser;
+    _email = user?.email ?? '';
+
     if (mounted) setState(() => _loading = false);
   }
 
@@ -55,7 +61,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     setState(() => _saving = true);
     final first = _firstController.text.trim();
     final last = _lastController.text.trim();
-    final display = _displayController.text.trim();
+    final bio = _bioController.text.trim();
 
     try {
       await FirebaseFirestore.instance
@@ -64,13 +70,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
           .set({
             'firstName': first,
             'lastName': last,
-            if (display.isNotEmpty) 'displayName': display,
+            'bio': bio,
           }, SetOptions(merge: true));
 
+      // Update Firebase Auth display name with firstName + lastName
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         try {
-          await user.updateDisplayName(display.isNotEmpty ? display : null);
+          final fullName = [first, last].where((s) => s.isNotEmpty).join(' ');
+          if (fullName.isNotEmpty) {
+            await user.updateDisplayName(fullName);
+          }
         } catch (_) {}
       }
 
@@ -114,7 +124,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   void dispose() {
     _firstController.dispose();
     _lastController.dispose();
-    _displayController.dispose();
+    _bioController.dispose();
     super.dispose();
   }
 
@@ -268,9 +278,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 fillColor: AppColors.light,
                               ),
                               validator: (v) {
-                                if ((v ?? '').trim().isEmpty &&
-                                    _displayController.text.trim().isEmpty) {
-                                  return 'Please provide a first name or display name';
+                                if ((v ?? '').trim().isEmpty) {
+                                  return 'First name is required';
                                 }
                                 return null;
                               },
@@ -302,22 +311,58 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 filled: true,
                                 fillColor: AppColors.light,
                               ),
+                              validator: (v) {
+                                if ((v ?? '').trim().isEmpty) {
+                                  return 'Last name is required';
+                                }
+                                return null;
+                              },
                             ),
                             const SizedBox(height: 16),
 
-                            // Display Name Field
+                            // Email Field (Read-only)
                             TextFormField(
-                              controller: _displayController,
+                              initialValue: _email,
+                              enabled: false,
                               decoration: InputDecoration(
-                                labelText: 'Display Name',
+                                labelText: 'Email',
                                 labelStyle: TextStyle(
                                   color: AppColors.dark.withOpacity(0.6),
                                 ),
                                 prefixIcon: Icon(
-                                  Icons.badge_outlined,
+                                  Icons.email_outlined,
+                                  color: AppColors.dark.withOpacity(0.4),
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                filled: true,
+                                fillColor: AppColors.dark.withOpacity(0.05),
+                                disabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: AppColors.dark.withOpacity(0.2),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Bio Field
+                            TextFormField(
+                              controller: _bioController,
+                              maxLines: 3,
+                              maxLength: 150,
+                              decoration: InputDecoration(
+                                labelText: 'Bio (Optional)',
+                                labelStyle: TextStyle(
+                                  color: AppColors.dark.withOpacity(0.6),
+                                ),
+                                prefixIcon: Icon(
+                                  Icons.edit_note,
                                   color: AppColors.primary,
                                 ),
-                                hintText: 'How others see you',
+                                hintText: 'Tell us about yourself...',
                                 hintStyle: TextStyle(
                                   color: AppColors.dark.withOpacity(0.3),
                                 ),
@@ -334,15 +379,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 filled: true,
                                 fillColor: AppColors.light,
                               ),
-                              validator: (v) {
-                                if ((v ?? '').trim().isEmpty &&
-                                    _firstController.text.trim().isEmpty) {
-                                  return 'Please provide a display name or first name';
-                                }
-                                return null;
-                              },
                             ),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 16),
 
                             // Info Card
                             Container(
@@ -364,7 +402,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
-                                      "Your display name is what appears on your recipes",
+                                      "Your name will appear as 'First Last' on your recipes",
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: AppColors.dark.withOpacity(0.7),

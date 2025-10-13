@@ -1,6 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 // 🎨 Color Palette - Food themed (consistent across app)
 class AppColors {
@@ -29,10 +33,15 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
 
   String? _selectedMealType;
   String _username = "";
+  File? _imageFile;
+  String? _imageUrl;
+  bool _isUploading = false;
 
   final CollectionReference recipes = FirebaseFirestore.instance.collection(
     'recipes',
   );
+
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -46,7 +55,124 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
       _selectedMealType = (d['mealType'] ?? '').toString().isNotEmpty
           ? (d['mealType']?.toString())
           : null;
+      _imageUrl = (d['imageUrl'] ?? '').toString().isNotEmpty
+          ? (d['imageUrl']?.toString())
+          : null;
     }
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1200,
+        maxHeight: 1200,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          _imageFile = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to pick image: $e'),
+          backgroundColor: Colors.red.shade400,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<String?> _uploadImageToImgBB(File imageFile) async {
+    try {
+      // ImgBB API Key (Free tier: 5000 uploads/month)
+      // Get your own key from https://api.imgbb.com/
+      // REPLACE THIS WITH YOUR OWN API KEY:
+      const String apiKey = 'de22de3b30c018cb74518c264f60cfb9';
+
+      // Show uploading status
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text('Uploading image...'),
+              ],
+            ),
+            backgroundColor: AppColors.primary,
+            duration: const Duration(seconds: 10),
+          ),
+        );
+      }
+
+      final bytes = await imageFile.readAsBytes();
+      final base64Image = base64Encode(bytes);
+
+      print('📤 Starting image upload to ImgBB...');
+      print('📦 Image size: ${bytes.length} bytes');
+
+      final response = await http
+          .post(
+            Uri.parse('https://api.imgbb.com/1/upload'),
+            body: {'key': apiKey, 'image': base64Image},
+          )
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              throw Exception(
+                'Upload timeout - Check your internet connection',
+              );
+            },
+          );
+
+      print('📥 Response status: ${response.statusCode}');
+      print('📄 Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        final imageUrl = jsonData['data']['url'] as String;
+        print('✅ Image uploaded successfully: $imageUrl');
+
+        // Hide uploading snackbar
+        if (mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        }
+
+        return imageUrl;
+      } else {
+        final errorBody = response.body;
+        print('❌ Upload failed: $errorBody');
+        throw Exception(
+          'Failed to upload image: ${response.statusCode}\n$errorBody',
+        );
+      }
+    } catch (e) {
+      print('❌ Upload error: $e');
+      throw Exception('Error uploading image: $e');
+    }
+  }
+
+  Future<void> _removeImage() async {
+    setState(() {
+      _imageFile = null;
+      _imageUrl = null;
+    });
   }
 
   Future<void> _fetchUserName() async {
@@ -96,6 +222,8 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
     }
 
     try {
+      setState(() => _isUploading = true);
+
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -108,7 +236,14 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
             ),
           ),
         );
+        setState(() => _isUploading = false);
         return;
+      }
+
+      // Upload image if a new one was selected
+      String? uploadedImageUrl = _imageUrl;
+      if (_imageFile != null) {
+        uploadedImageUrl = await _uploadImageToImgBB(_imageFile!);
       }
 
       if (widget.recipeId != null) {
@@ -118,6 +253,7 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
           'mealType': _selectedMealType,
           'ingredients': _ingredientsController.text,
           'instructions': _instructionsController.text,
+          'imageUrl': uploadedImageUrl ?? '',
           'timestamp': FieldValue.serverTimestamp(),
         });
       } else {
@@ -131,6 +267,7 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
           'mealType': _selectedMealType,
           'ingredients': _ingredientsController.text,
           'instructions': _instructionsController.text,
+          'imageUrl': uploadedImageUrl ?? '',
           'postedBy': _username,
           'username': _username,
           'likes': <String, dynamic>{},
@@ -139,6 +276,8 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
           'timestamp': FieldValue.serverTimestamp(),
         });
       }
+
+      setState(() => _isUploading = false);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -165,6 +304,7 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
       if (!mounted) return;
       Navigator.pop(context);
     } catch (error) {
+      setState(() => _isUploading = false);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -241,23 +381,38 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.send, color: Colors.white, size: 16),
-                    const SizedBox(width: 4),
-                    const Text(
-                      "Post",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                child: _isUploading
+                    ? const SizedBox(
+                        width: 50,
+                        height: 20,
+                        child: Center(
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        ),
+                      )
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.send, color: Colors.white, size: 16),
+                          const SizedBox(width: 4),
+                          const Text(
+                            "Post",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
               ),
-              onPressed: addRecipe,
+              onPressed: _isUploading ? null : addRecipe,
             ),
           ),
         ],
@@ -399,6 +554,119 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 18),
+
+                    // Image Upload Section
+                    Text(
+                      "Recipe Image (Optional)",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.dark.withOpacity(0.7),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    if (_imageFile != null || _imageUrl != null)
+                      Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: _imageFile != null
+                                ? Image.file(
+                                    _imageFile!,
+                                    height: 200,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                  )
+                                : Image.network(
+                                    _imageUrl!,
+                                    height: 200,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        height: 200,
+                                        color: AppColors.light,
+                                        child: Center(
+                                          child: Icon(
+                                            Icons.broken_image,
+                                            size: 50,
+                                            color: AppColors.dark.withOpacity(
+                                              0.3,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                          ),
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: IconButton(
+                              onPressed: _removeImage,
+                              icon: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.6),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      GestureDetector(
+                        onTap: _pickImage,
+                        child: Container(
+                          height: 200,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.3),
+                              width: 2,
+                              style: BorderStyle.solid,
+                            ),
+                          ),
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.add_photo_alternate,
+                                  size: 60,
+                                  color: AppColors.primary,
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Tap to add image',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Make your recipe more appetizing!',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.dark.withOpacity(0.5),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: 18),
 
                     // Meal Type Dropdown

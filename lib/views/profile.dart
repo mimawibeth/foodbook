@@ -94,6 +94,44 @@ class Profile extends StatelessWidget {
     return 'User';
   }
 
+  String _formatTimestamp(dynamic timestamp) {
+    if (timestamp == null) return '';
+
+    DateTime dateTime;
+    if (timestamp is Timestamp) {
+      dateTime = timestamp.toDate();
+    } else if (timestamp is DateTime) {
+      dateTime = timestamp;
+    } else {
+      return '';
+    }
+
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inSeconds < 60) {
+      return 'Just now';
+    } else if (difference.inMinutes < 60) {
+      final minutes = difference.inMinutes;
+      return '$minutes ${minutes == 1 ? 'minute' : 'minutes'} ago';
+    } else if (difference.inHours < 24) {
+      final hours = difference.inHours;
+      return '$hours ${hours == 1 ? 'hour' : 'hours'} ago';
+    } else if (difference.inDays < 7) {
+      final days = difference.inDays;
+      return '$days ${days == 1 ? 'day' : 'days'} ago';
+    } else if (difference.inDays < 30) {
+      final weeks = (difference.inDays / 7).floor();
+      return '$weeks ${weeks == 1 ? 'week' : 'weeks'} ago';
+    } else if (difference.inDays < 365) {
+      final months = (difference.inDays / 30).floor();
+      return '$months ${months == 1 ? 'month' : 'months'} ago';
+    } else {
+      final years = (difference.inDays / 365).floor();
+      return '$years ${years == 1 ? 'year' : 'years'} ago';
+    }
+  }
+
   Future<void> _addComment(
     String recipeId,
     String text, {
@@ -933,7 +971,7 @@ class Profile extends StatelessWidget {
                                       return currentUser.email
                                               ?.split('@')
                                               .first ??
-                                          'You';
+                                          'User';
                                     }();
                                     return Text(
                                       name,
@@ -1090,6 +1128,70 @@ class Profile extends StatelessWidget {
                         },
                       ),
                       const SizedBox(height: 16),
+                      // Bio Section
+                      StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                        stream: FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(currentUser.uid)
+                            .snapshots(),
+                        builder: (context, bioSnap) {
+                          final bioData = bioSnap.data?.data() ?? {};
+                          final bio = (bioData['bio'] ?? '').toString().trim();
+
+                          if (bio.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+
+                          return Column(
+                            children: [
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: AppColors.light,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: AppColors.primary.withOpacity(0.2),
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.info_outline,
+                                          size: 18,
+                                          color: AppColors.primary,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Bio',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      bio,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: AppColors.dark.withOpacity(0.8),
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                          );
+                        },
+                      ),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
@@ -1208,7 +1310,20 @@ class Profile extends StatelessWidget {
                         ),
                       );
                     }
-                    final recipes = snapshot.data!.docs;
+
+                    // Sort recipes by timestamp (newest first)
+                    final recipes = snapshot.data!.docs.toList()
+                      ..sort((a, b) {
+                        final aData = a.data() as Map<String, dynamic>?;
+                        final bData = b.data() as Map<String, dynamic>?;
+                        final aTime = aData?['timestamp'] as Timestamp?;
+                        final bTime = bData?['timestamp'] as Timestamp?;
+                        if (aTime == null && bTime == null) return 0;
+                        if (aTime == null) return 1;
+                        if (bTime == null) return -1;
+                        return bTime.compareTo(aTime);
+                      });
+
                     return Column(
                       children: recipes.map((doc) {
                         final data = doc.data() as Map<String, dynamic>;
@@ -1293,13 +1408,54 @@ class Profile extends StatelessWidget {
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
-                                      child: Text(
-                                        'You',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 15,
-                                          color: AppColors.dark,
-                                        ),
+                                      child: FutureBuilder<Map<String, String>>(
+                                        future: _getUserNames(currentUser.uid),
+                                        builder: (context, snapshot) {
+                                          final name = () {
+                                            if (snapshot.hasData) {
+                                              final f =
+                                                  snapshot.data!['firstName'] ??
+                                                  '';
+                                              final l =
+                                                  snapshot.data!['lastName'] ??
+                                                  '';
+                                              final full = [f, l]
+                                                  .where((s) => s.isNotEmpty)
+                                                  .join(' ');
+                                              if (full.isNotEmpty) return full;
+                                            }
+                                            return currentUser.email
+                                                    ?.split('@')
+                                                    .first ??
+                                                'User';
+                                          }();
+                                          final timeAgo = _formatTimestamp(
+                                            data['timestamp'],
+                                          );
+                                          return Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                name,
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 15,
+                                                  color: AppColors.dark,
+                                                ),
+                                              ),
+                                              if (timeAgo.isNotEmpty)
+                                                Text(
+                                                  timeAgo,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: AppColors.dark
+                                                        .withOpacity(0.6),
+                                                  ),
+                                                ),
+                                            ],
+                                          );
+                                        },
                                       ),
                                     ),
                                     PopupMenuButton<String>(
@@ -1499,6 +1655,54 @@ class Profile extends StatelessWidget {
                                   ],
                                 ),
                               ),
+
+                              // Recipe Image (if available)
+                              if (data['imageUrl'] != null &&
+                                  data['imageUrl'].toString().isNotEmpty)
+                                ClipRRect(
+                                  child: Image.network(
+                                    data['imageUrl'].toString(),
+                                    width: double.infinity,
+                                    height: 250,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        height: 250,
+                                        color: AppColors.light,
+                                        child: Center(
+                                          child: Icon(
+                                            Icons.broken_image,
+                                            size: 60,
+                                            color: AppColors.dark.withOpacity(
+                                              0.3,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Container(
+                                        height: 250,
+                                        color: AppColors.light,
+                                        child: Center(
+                                          child: CircularProgressIndicator(
+                                            color: AppColors.primary,
+                                            value:
+                                                loadingProgress
+                                                        .expectedTotalBytes !=
+                                                    null
+                                                ? loadingProgress
+                                                          .cumulativeBytesLoaded /
+                                                      loadingProgress
+                                                          .expectedTotalBytes!
+                                                : null,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
 
                               // Ingredients & Instructions
                               Padding(

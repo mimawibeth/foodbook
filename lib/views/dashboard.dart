@@ -143,12 +143,50 @@ class RecipeSearchDelegate extends SearchDelegate {
     if (query.isEmpty) {
       return Center(
         child: Text(
-          'Type to search recipes',
+          'Type to search recipes or users',
           style: TextStyle(color: AppColors.dark.withOpacity(0.6)),
         ),
       );
     }
     return _buildRecipeResults(query);
+  }
+
+  String _formatTimestamp(dynamic timestamp) {
+    if (timestamp == null) return '';
+
+    DateTime dateTime;
+    if (timestamp is Timestamp) {
+      dateTime = timestamp.toDate();
+    } else if (timestamp is DateTime) {
+      dateTime = timestamp;
+    } else {
+      return '';
+    }
+
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inSeconds < 60) {
+      return 'Just now';
+    } else if (difference.inMinutes < 60) {
+      final minutes = difference.inMinutes;
+      return '$minutes ${minutes == 1 ? 'minute' : 'minutes'} ago';
+    } else if (difference.inHours < 24) {
+      final hours = difference.inHours;
+      return '$hours ${hours == 1 ? 'hour' : 'hours'} ago';
+    } else if (difference.inDays < 7) {
+      final days = difference.inDays;
+      return '$days ${days == 1 ? 'day' : 'days'} ago';
+    } else if (difference.inDays < 30) {
+      final weeks = (difference.inDays / 7).floor();
+      return '$weeks ${weeks == 1 ? 'week' : 'weeks'} ago';
+    } else if (difference.inDays < 365) {
+      final months = (difference.inDays / 30).floor();
+      return '$months ${months == 1 ? 'month' : 'months'} ago';
+    } else {
+      final years = (difference.inDays / 365).floor();
+      return '$years ${years == 1 ? 'year' : 'years'} ago';
+    }
   }
 
   Widget _buildRecipeResults(String searchQuery) {
@@ -171,6 +209,7 @@ class RecipeSearchDelegate extends SearchDelegate {
           );
         }
         return ListView.builder(
+          padding: EdgeInsets.all(16),
           itemCount: results.length,
           itemBuilder: (context, index) {
             final data = results[index];
@@ -179,41 +218,315 @@ class RecipeSearchDelegate extends SearchDelegate {
               final mealType = data['mealType'] ?? '';
               final ingredients = data['ingredients'] ?? '';
               final instructions = data['instructions'] ?? '';
-              return Card(
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: ListTile(
-                  leading: Icon(
-                    Icons.restaurant_menu,
-                    color: AppColors.primary,
-                  ),
-                  title: Text(recipeTitle),
-                  subtitle: Text(mealType),
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: Text(recipeTitle),
-                        content: SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Meal Type: $mealType'),
-                              const SizedBox(height: 8),
-                              Text('Ingredients: $ingredients'),
-                              const SizedBox(height: 8),
-                              Text('Instructions: $instructions'),
-                            ],
+              final username = data['postedBy'] ?? 'Unknown';
+              final authorId = (data['userId'] ?? '') as String;
+              final imageUrl = data['imageUrl'] ?? '';
+              final timeAgo = _formatTimestamp(data['timestamp']);
+
+              // Get meal type icon and color (matching discover page)
+              IconData mealIcon;
+              Color mealColor;
+              switch (mealType) {
+                case 'Breakfast':
+                  mealIcon = Icons.wb_sunny;
+                  mealColor = AppColors.secondary;
+                  break;
+                case 'Lunch':
+                  mealIcon = Icons.lunch_dining;
+                  mealColor = AppColors.primary;
+                  break;
+                case 'Dinner':
+                  mealIcon = Icons.dinner_dining;
+                  mealColor = AppColors.accent;
+                  break;
+                default:
+                  mealIcon = Icons.fastfood;
+                  mealColor = AppColors.primary;
+              }
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 15,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Post Header
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [AppColors.primary, AppColors.accent],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              shape: BoxShape.circle,
+                            ),
+                            child: CircleAvatar(
+                              radius: 20,
+                              backgroundColor: Colors.white,
+                              child: Icon(
+                                Icons.person,
+                                size: 22,
+                                color: AppColors.primary,
+                              ),
+                            ),
                           ),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: Text('Close'),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                if (authorId.isNotEmpty &&
+                                    FirebaseAuth.instance.currentUser?.uid !=
+                                        authorId) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => OtherUserProfilePage(
+                                        userId: authorId,
+                                        displayName: username.toString(),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    username,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: AppColors.dark,
+                                    ),
+                                  ),
+                                  if (timeAgo.isNotEmpty)
+                                    Text(
+                                      timeAgo,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.dark.withOpacity(0.6),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                    );
-                  },
+                    ),
+
+                    // Recipe Content with gradient header
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            mealColor.withOpacity(0.1),
+                            mealColor.withOpacity(0.05),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(12),
+                          topRight: Radius.circular(12),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: mealColor.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(mealIcon, color: mealColor, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  recipeTitle,
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.dark,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: mealColor.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    mealType,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: mealColor,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Recipe Image (if available)
+                    if (imageUrl.isNotEmpty)
+                      ClipRRect(
+                        child: Image.network(
+                          imageUrl,
+                          width: double.infinity,
+                          height: 250,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              height: 250,
+                              color: AppColors.light,
+                              child: Center(
+                                child: Icon(
+                                  Icons.broken_image,
+                                  size: 60,
+                                  color: AppColors.dark.withOpacity(0.3),
+                                ),
+                              ),
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              height: 250,
+                              color: AppColors.light,
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.primary,
+                                  value:
+                                      loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                            loadingProgress.expectedTotalBytes!
+                                      : null,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+
+                    // Ingredients & Instructions
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (ingredients.isNotEmpty) ...[
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.list_alt,
+                                  color: AppColors.primary,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Ingredients',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: AppColors.dark,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppColors.light,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: AppColors.primary.withOpacity(0.2),
+                                ),
+                              ),
+                              child: Text(
+                                ingredients,
+                                style: TextStyle(
+                                  color: AppColors.dark.withOpacity(0.8),
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                          ],
+                          if (instructions.isNotEmpty) ...[
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.format_list_numbered,
+                                  color: AppColors.primary,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Instructions',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: AppColors.dark,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppColors.light,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: AppColors.primary.withOpacity(0.2),
+                                ),
+                              ),
+                              child: Text(
+                                instructions,
+                                style: TextStyle(
+                                  color: AppColors.dark.withOpacity(0.8),
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               );
             } else if (data['type'] == 'user') {
@@ -221,7 +534,7 @@ class RecipeSearchDelegate extends SearchDelegate {
               final email = data['email'] ?? '';
               final userId = data['userId'] as String? ?? '';
               return Card(
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                margin: EdgeInsets.only(bottom: 8),
                 child: ListTile(
                   leading: Icon(Icons.person, color: AppColors.secondary),
                   title: Text(displayName),
@@ -417,6 +730,44 @@ class _DashboardHomeState extends State<DashboardHome>
     final authName = FirebaseAuth.instance.currentUser?.displayName;
     if (authName != null && authName.trim().isNotEmpty) return authName.trim();
     return 'User';
+  }
+
+  String _formatTimestamp(dynamic timestamp) {
+    if (timestamp == null) return '';
+
+    DateTime dateTime;
+    if (timestamp is Timestamp) {
+      dateTime = timestamp.toDate();
+    } else if (timestamp is DateTime) {
+      dateTime = timestamp;
+    } else {
+      return '';
+    }
+
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inSeconds < 60) {
+      return 'Just now';
+    } else if (difference.inMinutes < 60) {
+      final minutes = difference.inMinutes;
+      return '$minutes ${minutes == 1 ? 'minute' : 'minutes'} ago';
+    } else if (difference.inHours < 24) {
+      final hours = difference.inHours;
+      return '$hours ${hours == 1 ? 'hour' : 'hours'} ago';
+    } else if (difference.inDays < 7) {
+      final days = difference.inDays;
+      return '$days ${days == 1 ? 'day' : 'days'} ago';
+    } else if (difference.inDays < 30) {
+      final weeks = (difference.inDays / 7).floor();
+      return '$weeks ${weeks == 1 ? 'week' : 'weeks'} ago';
+    } else if (difference.inDays < 365) {
+      final months = (difference.inDays / 30).floor();
+      return '$months ${months == 1 ? 'month' : 'months'} ago';
+    } else {
+      final years = (difference.inDays / 365).floor();
+      return '$years ${years == 1 ? 'year' : 'years'} ago';
+    }
   }
 
   Future<void> _addComment(
@@ -974,174 +1325,6 @@ class _DashboardHomeState extends State<DashboardHome>
     await recipeRef.update({'saves': saves});
   }
 
-  Future<void> _editRecipeDialog(
-    BuildContext context,
-    String recipeId,
-    Map<String, dynamic> data,
-  ) async {
-    final titleController = TextEditingController(text: data['name'] ?? '');
-    final ingredientsController = TextEditingController(
-      text: data['ingredients'] ?? '',
-    );
-    final instructionsController = TextEditingController(
-      text: data['instructions'] ?? '',
-    );
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          backgroundColor: Colors.white,
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Center(
-                      child: Text(
-                        'Edit Recipe',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 18),
-                  TextField(
-                    controller: titleController,
-                    decoration: InputDecoration(
-                      labelText: 'Recipe Title',
-                      labelStyle: TextStyle(color: AppColors.primary),
-                      filled: true,
-                      fillColor: AppColors.light,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: AppColors.primary,
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 14),
-                  TextField(
-                    controller: ingredientsController,
-                    decoration: InputDecoration(
-                      labelText: 'Ingredients',
-                      labelStyle: TextStyle(color: AppColors.primary),
-                      filled: true,
-                      fillColor: AppColors.light,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: AppColors.primary,
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    maxLines: 2,
-                  ),
-                  SizedBox(height: 14),
-                  TextField(
-                    controller: instructionsController,
-                    decoration: InputDecoration(
-                      labelText: 'Instructions',
-                      labelStyle: TextStyle(color: AppColors.primary),
-                      filled: true,
-                      fillColor: AppColors.light,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: AppColors.primary,
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    maxLines: 3,
-                  ),
-                  SizedBox(height: 22),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      TextButton.icon(
-                        onPressed: () => Navigator.pop(context, false),
-                        icon: Icon(Icons.cancel, color: AppColors.dark),
-                        label: Text(
-                          'Cancel',
-                          style: TextStyle(
-                            color: AppColors.dark,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                        ),
-                        onPressed: () => Navigator.pop(context, true),
-                        icon: Icon(Icons.save, color: Colors.white),
-                        label: Text(
-                          'Save',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-
-    if (result == true) {
-      await FirebaseFirestore.instance
-          .collection('recipes')
-          .doc(recipeId)
-          .update({
-            'name': titleController.text.trim(),
-            'ingredients': ingredientsController.text.trim(),
-            'instructions': instructionsController.text.trim(),
-          });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Recipe updated')));
-    }
-  }
-
   Future<void> _toggleFollow(String targetUid) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null || targetUid.isEmpty || uid == targetUid) return;
@@ -1336,6 +1519,7 @@ class _DashboardHomeState extends State<DashboardHome>
                   final commentsCount = (data['commentsCount'] is int)
                       ? (data['commentsCount'] as int)
                       : 0;
+                  final timeAgo = _formatTimestamp(data['timestamp']);
 
                   // Get meal type icon and color (matching profile.dart)
                   IconData mealIcon;
@@ -1435,15 +1619,16 @@ class _DashboardHomeState extends State<DashboardHome>
                                           color: AppColors.dark,
                                         ),
                                       ),
-                                      Text(
-                                        'Recipe Creator',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: AppColors.dark.withOpacity(
-                                            0.6,
+                                      if (timeAgo.isNotEmpty)
+                                        Text(
+                                          timeAgo,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.dark.withOpacity(
+                                              0.6,
+                                            ),
                                           ),
                                         ),
-                                      ),
                                     ],
                                   ),
                                 ),
@@ -1458,10 +1643,14 @@ class _DashboardHomeState extends State<DashboardHome>
                                   ),
                                   onSelected: (value) async {
                                     if (value == 'edit') {
-                                      await _editRecipeDialog(
+                                      Navigator.push(
                                         context,
-                                        recipes[index].id,
-                                        data,
+                                        MaterialPageRoute(
+                                          builder: (_) => CreateRecipePage(
+                                            recipeId: recipes[index].id,
+                                            initialData: data,
+                                          ),
+                                        ),
                                       );
                                     } else if (value == 'delete') {
                                       final confirm = await showDialog<bool>(
@@ -1594,7 +1783,7 @@ class _DashboardHomeState extends State<DashboardHome>
                                             ? AppColors.dark.withOpacity(0.1)
                                             : null,
                                       ),
-                                      height: 36, 
+                                      height: 36,
                                       child: ElevatedButton(
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: Colors.transparent,
@@ -1768,6 +1957,53 @@ class _DashboardHomeState extends State<DashboardHome>
                             ],
                           ),
                         ),
+
+                        // Recipe Image (if available)
+                        if (data['imageUrl'] != null &&
+                            data['imageUrl'].toString().isNotEmpty)
+                          ClipRRect(
+                            child: Image.network(
+                              data['imageUrl'].toString(),
+                              width: double.infinity,
+                              height: 250,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  height: 250,
+                                  color: AppColors.light,
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.broken_image,
+                                      size: 60,
+                                      color: AppColors.dark.withOpacity(0.3),
+                                    ),
+                                  ),
+                                );
+                              },
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Container(
+                                      height: 250,
+                                      color: AppColors.light,
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                          color: AppColors.primary,
+                                          value:
+                                              loadingProgress
+                                                      .expectedTotalBytes !=
+                                                  null
+                                              ? loadingProgress
+                                                        .cumulativeBytesLoaded /
+                                                    loadingProgress
+                                                        .expectedTotalBytes!
+                                              : null,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                            ),
+                          ),
 
                         // Ingredients & Instructions (matching profile.dart style)
                         Padding(
