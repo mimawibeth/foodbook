@@ -7,6 +7,7 @@ import 'my_recipes.dart';
 import 'favorites.dart';
 import 'profile.dart';
 import 'other_profile.dart';
+import 'recipe_detail.dart';
 
 // 🎨 Color Palette - Food themed (same as register.dart)
 class AppColors {
@@ -222,6 +223,7 @@ class RecipeSearchDelegate extends SearchDelegate {
               final authorId = (data['userId'] ?? '') as String;
               final imageUrl = data['imageUrl'] ?? '';
               final timeAgo = _formatTimestamp(data['timestamp']);
+              final recipeId = data['recipeId'] ?? '';
 
               // Get meal type icon and color (matching discover page)
               IconData mealIcon;
@@ -399,42 +401,65 @@ class RecipeSearchDelegate extends SearchDelegate {
 
                     // Recipe Image (if available)
                     if (imageUrl.isNotEmpty)
-                      ClipRRect(
-                        child: Image.network(
-                          imageUrl,
-                          width: double.infinity,
-                          height: 250,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              height: 250,
-                              color: AppColors.light,
-                              child: Center(
-                                child: Icon(
-                                  Icons.broken_image,
-                                  size: 60,
-                                  color: AppColors.dark.withOpacity(0.3),
+                      GestureDetector(
+                        onTap: () {
+                          if (recipeId.isNotEmpty) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => RecipeDetailPage(
+                                  recipeId: recipeId,
+                                  recipeData: data,
                                 ),
                               ),
                             );
-                          },
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
+                          }
+                        },
+                        child: Hero(
+                          tag: 'recipe_image_$recipeId',
+                          child: ClipRRect(
+                            child: Image.network(
+                              imageUrl,
+                              width: double.infinity,
                               height: 250,
-                              color: AppColors.light,
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  color: AppColors.primary,
-                                  value:
-                                      loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded /
-                                            loadingProgress.expectedTotalBytes!
-                                      : null,
-                                ),
-                              ),
-                            );
-                          },
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  height: 250,
+                                  color: AppColors.light,
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.broken_image,
+                                      size: 60,
+                                      color: AppColors.dark.withOpacity(0.3),
+                                    ),
+                                  ),
+                                );
+                              },
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Container(
+                                      height: 250,
+                                      color: AppColors.light,
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                          color: AppColors.primary,
+                                          value:
+                                              loadingProgress
+                                                      .expectedTotalBytes !=
+                                                  null
+                                              ? loadingProgress
+                                                        .cumulativeBytesLoaded /
+                                                    loadingProgress
+                                                        .expectedTotalBytes!
+                                              : null,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                            ),
+                          ),
                         ),
                       ),
 
@@ -584,7 +609,7 @@ class RecipeSearchDelegate extends SearchDelegate {
             (data['postedBy'] ?? '').toString(),
           ].join(' ').toLowerCase();
           if (haystack.contains(lowerQuery)) {
-            return {...data, 'type': 'recipe'};
+            return {...data, 'type': 'recipe', 'recipeId': doc.id};
           }
           return null;
         })
@@ -1961,47 +1986,66 @@ class _DashboardHomeState extends State<DashboardHome>
                         // Recipe Image (if available)
                         if (data['imageUrl'] != null &&
                             data['imageUrl'].toString().isNotEmpty)
-                          ClipRRect(
-                            child: Image.network(
-                              data['imageUrl'].toString(),
-                              width: double.infinity,
-                              height: 250,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  height: 250,
-                                  color: AppColors.light,
-                                  child: Center(
-                                    child: Icon(
-                                      Icons.broken_image,
-                                      size: 60,
-                                      color: AppColors.dark.withOpacity(0.3),
-                                    ),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => RecipeDetailPage(
+                                    recipeId: recipes[index].id,
+                                    recipeData: data,
                                   ),
-                                );
-                              },
-                              loadingBuilder:
-                                  (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
+                                ),
+                              );
+                            },
+                            child: Hero(
+                              tag: 'recipe_image_${recipes[index].id}',
+                              child: ClipRRect(
+                                child: Image.network(
+                                  data['imageUrl'].toString(),
+                                  width: double.infinity,
+                                  height: 250,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
                                     return Container(
                                       height: 250,
                                       color: AppColors.light,
                                       child: Center(
-                                        child: CircularProgressIndicator(
-                                          color: AppColors.primary,
-                                          value:
-                                              loadingProgress
-                                                      .expectedTotalBytes !=
-                                                  null
-                                              ? loadingProgress
-                                                        .cumulativeBytesLoaded /
-                                                    loadingProgress
-                                                        .expectedTotalBytes!
-                                              : null,
+                                        child: Icon(
+                                          Icons.broken_image,
+                                          size: 60,
+                                          color: AppColors.dark.withOpacity(
+                                            0.3,
+                                          ),
                                         ),
                                       ),
                                     );
                                   },
+                                  loadingBuilder:
+                                      (context, child, loadingProgress) {
+                                        if (loadingProgress == null)
+                                          return child;
+                                        return Container(
+                                          height: 250,
+                                          color: AppColors.light,
+                                          child: Center(
+                                            child: CircularProgressIndicator(
+                                              color: AppColors.primary,
+                                              value:
+                                                  loadingProgress
+                                                          .expectedTotalBytes !=
+                                                      null
+                                                  ? loadingProgress
+                                                            .cumulativeBytesLoaded /
+                                                        loadingProgress
+                                                            .expectedTotalBytes!
+                                                  : null,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                ),
+                              ),
                             ),
                           ),
 
